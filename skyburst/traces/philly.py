@@ -110,6 +110,7 @@ class JobTrace:
 
 
 def load_philly_traces(trace_dir: str):
+    print('Loading Philly job trace...')
     trace_dir = os.path.abspath(os.path.expanduser(trace_dir))
     cluster_job_log_path = os.path.join(trace_dir, 'cluster_job_log')
     with open(cluster_job_log_path, 'r') as f:

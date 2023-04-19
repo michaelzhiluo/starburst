@@ -1,12 +1,28 @@
 class Job(object):
-    def __init__(self, idx: int, arrival: float, runtime: float,
-                 deadline: float, resources: dict, cost: float):
+    def __init__(self,
+                 idx: int,
+                 arrival: float = 0.0,
+                 runtime: float = 0.0,
+                 deadline: float = 0.0,
+                 resources: dict = None,
+                 cost: float = 0.0):
         self.idx = idx
         self.arrival = arrival
         self.runtime = runtime
         self.deadline = deadline
         self.resources = resources
-        self.num_gpus = resources['GPUs']
+        if 'GPUs' in resources:
+            self.num_gpus = resources['GPUs']
+        else:
+            self.resources['GPUs'] = 0
+            self.num_gpus = 0
+
+        if 'CPUs' in resources:
+            self.num_cpus = resources['CPUs']
+        else:
+            self.resources['CPUs'] = 0
+            self.num_cpus = 0
+
         self.cost = cost
 
         # State of the Job
@@ -17,14 +33,21 @@ class Job(object):
         # Keeps track of which GPU(s) the job ran on.
         self.allocated_gpus = {}
 
-        # This for preemption, to prevent chain pre-emptions
-        self.opp_cost = 0
+        # For backfill scheduling, job immediately executed after Job idx `block_job_idx` completes.
+        self.block_job_idx = None
+
+        # This field keeps track of the total starved space a job has incurred due to preemption.
+        # This is to prevent chain preemptions.
+        self.starved_space = 0
 
     def __eq__(self, other):
         return self.idx == other.idx
 
     def __hash__(self):
         return hash(str(self.idx))
+
+    def set_deadline(self, deadline):
+        self.deadline = deadline
 
     def __repr__(self):
         return f'Job(idx={self.idx}, resources={self.resources}, arr={self.arrival}, run = {self.runtime}, deadline={self.deadline}, start={self.start})\n'
