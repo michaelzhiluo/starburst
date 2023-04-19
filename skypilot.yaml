@@ -11,7 +11,7 @@ setup: |
   cd philly-traces
   tar -xvf trace-data.tar.gz 
   cd ~/
-  git clone https://michaelzhiluo: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@github.com/michaelzhiluo/skyburst.git
+  git clone https://github.com/michaelzhiluo/skyburst.git
   conda create -n sky -y python=3.9
   conda activate sky
   cd skyburst
