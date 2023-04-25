@@ -7,16 +7,13 @@ from tqdm import tqdm
 
 from skyburst import Cluster, Job, utils, waiting_policy
 
-DEFAULT_CLUSTER_SPEC = {
+DEFAULT_SIMULATOR_SPEC = {
     # Size of the cluster (i.e. # of cluster nodes).
     'cluster_size': 64,
     # Number of GPU(s) per cluster node.
     'gpus_per_node': 8,
     # Number of CPU(s) per cluster node.
     'cpus_per_node': 96,
-}
-
-DEFAULT_POLICY_SPEC = {
     # Scheduling algorithm specifying order of the queue.
     'sched_alg': 'fifo',
     # How jobs are binpacked into the cluster.
@@ -32,10 +29,7 @@ DEFAULT_POLICY_SPEC = {
     # Enable prediction. (Jobs predict if they can be assigned to cluster before timing out).
     'predict_wait': False,
     # (Deprecated) Algorithm to immediately send job to cloud (without waiting).
-    'filter_alg': None
-}
-
-DEFAULT_SIMULATOR_SPEC = {
+    'filter_alg': None,
     # Prints out simulator state at every timestep.
     'verbose': False,
     # Appends python debugger at every timestemp.
@@ -46,55 +40,50 @@ DEFAULT_SIMULATOR_SPEC = {
     'warmup_jobs': 5000,
     # Metadata on job generation (run prior to simulator).
     'jobgen_spec': {
-        # Dataset type ['philly', 'philly_gen']
-        'dataset': None,
-        # Arrival rate of jobs (for Philly job gen)
-        'arrival_rate': 0.0,
+        # Dataset type ['philly', 'philly_gen', 'gen_gpu']
+        'dataset': 'philly',
+        # Arrival rate of jobs (used in 'gen_gpu', 'philly_gen')
+        'arrival_rate': -1,
         # Total number of jobs generated.
-        'total_jobs': 0,
+        'total_jobs': -1,
+        # Avg. Job runtime (used in 'gen_gpu')
+        'job_runtime': -1,
     }
 }
 
 
 def run_simulator(
         jobs: List[Job],
-        cluster_spec: Optional[Dict[str, Any]] = DEFAULT_CLUSTER_SPEC,
-        policy_spec: Optional[Dict[str, Any]] = DEFAULT_POLICY_SPEC,
         simulator_spec: Optional[Dict[str, Any]] = DEFAULT_SIMULATOR_SPEC):
     """Executes a simulator over a fixed set of jobs. Returns a 
     a result dictionary over all finished jobs.
 
     Args:
         jobs: List of generated jobs sorted by their arrival times.
-        cluster_spec: Cluster specifications, including `cluster_size`, 
-                      `gpus_per_node`, `cpus_per_node`. Assumes the
-                      cluster is homogeneous. 
-        policy_spec: Policy specifications, including `sched_alg`,
-                     `binpack_alg`, `backfill`, `loop`, `filter_alg`.
-        simulator_spec: Simulator settings, includig `verbose`,
-                         `debug`, and `pbar_idx`.
+        simulator_spec: Simulator settings, see above dictionary for default
+                        values.
     """
-    _cluster_spec = DEFAULT_CLUSTER_SPEC.copy()
-    _policy_spec = DEFAULT_POLICY_SPEC.copy()
     _simulator_spec = DEFAULT_SIMULATOR_SPEC.copy()
-    _cluster_spec.update(cluster_spec)
-    _policy_spec.update(policy_spec)
     _simulator_spec.update(simulator_spec)
-    cluster_spec = _cluster_spec
-    policy_spec = _policy_spec
     simulator_spec = _simulator_spec
 
-    sched_alg = policy_spec['sched_alg']
+    sched_alg = simulator_spec['sched_alg']
     sort_func = utils.generate_sorting_function(sched_alg)
 
+    waiting_policy_str = simulator_spec['waiting_policy'].split('-')
+    assert len(waiting_policy_str) <= 2
+    if len(waiting_policy_str) == 2:
+        simulator_spec['waiting_policy'] = waiting_policy_str[0]
+        simulator_spec['waiting_factor'] = float(waiting_policy_str[1])
+
     waiting_fn = waiting_policy.lookup_linear_function(
-        policy_spec['waiting_policy'],
-        waiting_factor=policy_spec['waiting_factor'])
-    binpack_alg = policy_spec['binpack_alg']
-    backfill = policy_spec['backfill']
-    loop = policy_spec['loop']
-    predict_wait = policy_spec['predict_wait']
-    filter_alg = policy_spec['filter_alg']
+        simulator_spec['waiting_policy'],
+        waiting_factor=simulator_spec['waiting_factor'])
+    binpack_alg = simulator_spec['binpack_alg']
+    backfill = simulator_spec['backfill']
+    loop = simulator_spec['loop']
+    predict_wait = simulator_spec['predict_wait']
+    filter_alg = simulator_spec['filter_alg']
     assert not (
         backfill and loop
     ), f'Must only set one option to be True - backfill:{backfill}, loop:{loop} '
@@ -109,8 +98,8 @@ def run_simulator(
     num_jobs = len(jobs)
     cloud_cost = 0.0
     # Create fake cluster. The cluster is homogeneous.
-    cluster = Cluster(num_nodes=cluster_spec['cluster_size'],
-                      num_gpus_per_node=cluster_spec['gpus_per_node'],
+    cluster = Cluster(num_nodes=simulator_spec['cluster_size'],
+                      num_gpus_per_node=simulator_spec['gpus_per_node'],
                       backfill=backfill,
                       binpack=binpack_alg)
     t = 0
@@ -239,11 +228,7 @@ def run_simulator(
         'num_gpus': np.array([j.num_gpus for j in finished_jobs]),
         'state': np.array([j.state for j in finished_jobs]),
         'allocated_gpus': np.array([j.allocated_gpus for j in finished_jobs]),
-        'specs': {
-            'cluster_spec': cluster_spec,
-            'policy_spec': policy_spec,
-            'jobgen_spec': simulator_spec['jobgen_spec']
-        },
+        'simulator_spec': simulator_spec,
         'stats': {}
     }
 
@@ -252,7 +237,8 @@ def run_simulator(
     total_running_time = 0.0
     num_jobs = 0
     total_cloud_cost = 0
-    sum_space = 0.0
+    sum_local_space = 0.0
+    sum_cloud_space = 0.0
 
     start_time = finished_jobs[simulator_spec['warmup_jobs']].arrival
     end_time = finished_jobs[len(finished_jobs) -
@@ -266,18 +252,23 @@ def run_simulator(
                 finished_jobs) - simulator_spec['warmup_jobs']:
             if job.state == 'LOCAL':
                 if inter_end >= inter_start:
-                    sum_space += job.num_gpus * (inter_end - inter_start)
+                    sum_local_space += job.num_gpus * (inter_end - inter_start)
+            elif job.state == 'TIMEOUT-CLOUD':
+                if inter_end >= inter_start:
+                    sum_cloud_space += job.num_gpus * (inter_end - inter_start)
             continue
         # Moved to cloud
         if job.state == 'TIMEOUT-CLOUD':
             assert job.start is not None
             total_waiting_time += job.start - job.arrival
+            if inter_end >= inter_start:
+                sum_cloud_space += job.num_gpus * (inter_end - inter_start)
             total_cloud_cost += job.cost
         elif job.state == 'LOCAL':
             assert job.state == 'LOCAL'
             total_waiting_time += job.start - job.arrival
             if inter_end >= inter_start:
-                sum_space += job.num_gpus * (inter_end - inter_start)
+                sum_local_space += job.num_gpus * (inter_end - inter_start)
         total_running_time += job.runtime
         num_jobs += 1
 
@@ -287,21 +278,25 @@ def run_simulator(
     result_dict['stats']['avg_waiting'] = total_waiting_time / num_jobs
     result_dict['stats']['avg_jct'] = (total_waiting_time +
                                        total_running_time) / num_jobs
-    result_dict['stats']['utilization'] = sum_space / (
-        cluster_spec['cluster_size'] * cluster_spec['gpus_per_node'] *
+    result_dict['stats']['cluster_utilization'] = sum_local_space / (
+        simulator_spec['cluster_size'] * simulator_spec['gpus_per_node'] *
         (end_time - start_time))
+    result_dict['stats']['system_utilization'] = (
+        sum_local_space + sum_cloud_space) / (simulator_spec['cluster_size'] *
+                                              simulator_spec['gpus_per_node'] *
+                                              (end_time - start_time))
 
     stats_dict = result_dict['stats']
     headers = [
         'Sched Policy', 'Waiting Policy', '# Cluster Nodes',
         'Total Cloud Cost', 'Avg. Cloud Cost', 'Avg. Waiting', 'Avg. JCT',
-        'Utilization'
+        'Cluster Utilization', 'System Utilization'
     ]
-    waiting_policy_str = policy_spec['waiting_policy']
-    waiting_factor_str = policy_spec['waiting_factor']
-    data = [(policy_spec['sched_alg'], \
-        f'{waiting_policy_str}-{waiting_factor_str}', cluster_spec['cluster_size'], \
+    waiting_policy_str = simulator_spec['waiting_policy']
+    waiting_factor_str = simulator_spec['waiting_factor']
+    data = [(simulator_spec['sched_alg'], \
+        f'{waiting_policy_str}-{waiting_factor_str}', simulator_spec['cluster_size'], \
         stats_dict['total_cloud_cost'], stats_dict['avg_cloud_cost'], \
-        stats_dict['avg_waiting'], stats_dict['avg_jct'], stats_dict['utilization'])]
+        stats_dict['avg_waiting'], stats_dict['avg_jct'], stats_dict['cluster_utilization'], stats_dict['system_utilization'])]
     print(tabulate(data, headers=headers))
     return result_dict

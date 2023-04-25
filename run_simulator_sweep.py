@@ -1,18 +1,33 @@
 import argparse
+import itertools
 import json
+import multiprocessing
+import pickle
+import os
 
 from skyburst import job_gen, run_simulator
+from skyburst import utils
 
 
 def generate_data_run_simulator(run_config):
     proc_jobs = job_gen.load_processed_jobs(
         dataset_config=run_config['jobgen_spec'])
-    run_simulator(proc_jobs, run_config)
+    return run_simulator(proc_jobs, run_config)
+
+
+def run_grid_search(run_configs, num_procs=62):
+    for i, r in enumerate(run_configs):
+        r['pbar_idx'] = i
+    run_configs = [[r] for r in run_configs]
+    with multiprocessing.Pool(processes=num_procs) as pool:
+        results = pool.starmap(generate_data_run_simulator, run_configs)
+    return results
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Run a single instantiation of the hybrid cloud simulator.'
+        description=
+        'Run a hyperparameter sweep over diff. values in a hybrid cloud simulator.'
     )
 
     # Arguments for Data Generation
@@ -23,10 +38,12 @@ if __name__ == '__main__':
                         help='Choose dataset to run simulator from.')
     parser.add_argument('--arrival_rate',
                         type=float,
+                        nargs='+',
                         default=None,
                         help='Arrival rate for generated jobs.')
     parser.add_argument('--cv_factor',
                         type=float,
+                        nargs='+',
                         default=1.0,
                         help='Varies job burstiness.')
     parser.add_argument('--total_jobs',
@@ -41,6 +58,7 @@ if __name__ == '__main__':
     # Arguments for Cluster specifications.
     parser.add_argument('--cluster_size',
                         type=int,
+                        nargs='+',
                         default=64,
                         help='Size of the cluster (i.e. # of cluster nodes)')
     parser.add_argument('--gpus_per_node',
@@ -56,6 +74,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--sched_alg',
         type=str,
+        nargs='+',
         default='fifo',
         help='Scheduling algorithm specifying order of the queue.')
     parser.add_argument('--binpack_alg',
@@ -66,16 +85,19 @@ if __name__ == '__main__':
     parser.add_argument(
         '--waiting_policy',
         type=str,
+        nargs='+',
         default='linear_runtime',
         help='Waiting policy (how long jobs should at max wait in the cloud).')
     parser.add_argument('--backfill',
                         type=int,
+                        nargs='+',
                         default=0,
                         choices=[0, 1],
                         help='Enable backfill (assumes time estimator)')
     parser.add_argument(
         '--loop',
         type=int,
+        nargs='+',
         default=0,
         choices=[0, 1],
         help=
@@ -83,6 +105,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--predict_wait',
         type=int,
+        nargs='+',
         default=0,
         choices=[0, 1],
         help=
@@ -107,7 +130,7 @@ if __name__ == '__main__':
     )
 
     args = parser.parse_args()
-    run_config = {
+    grid_search_config = {
         # Cluster config
         'cluster_size': args.cluster_size,
         'gpus_per_node': args.gpus_per_node,
@@ -132,4 +155,13 @@ if __name__ == '__main__':
             'seed': args.seed
         }
     }
-    generate_data_run_simulator(run_config)
+    grid_search_config = utils.convert_to_lists(grid_search_config)
+    run_configs = utils.generate_cartesian_product(grid_search_config)
+    final_simulator_results = run_grid_search(run_configs)
+    file_path = f'/home/gcpuser/sim_logs/{args.dataset}/vary_cv_{args.seed}.log'
+    absolute_file_path = os.path.abspath(file_path)
+    dir_path = os.path.dirname(absolute_file_path)
+    os.system(f'mkdir -p {dir_path}')
+    file = open(absolute_file_path, 'wb')
+    pickle.dump(final_simulator_results, file)
+    file.close()
