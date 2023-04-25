@@ -3,6 +3,7 @@ from typing import Any, Dict, List
 
 from skyburst import Job, waiting_policy
 from skyburst.traces import philly
+from skyburst.traces import helios
 
 
 # Returns the total cost of a GPU-only job.
@@ -38,6 +39,9 @@ def load_processed_jobs(dataset_config: Dict[str, Any]):
             'seed': dataset_config['seed'],
         }
         return generate_gpu_jobs(philly_jobs, **dataset_kwargs)
+    elif dataset_type == 'helios':
+        helios_jobs = helios.load_helios_traces('~/HeliosData/data/Venus')
+        return process_helios_jobs(helios_jobs)
     else:
         raise ValueError(
             f'Dataset {dataset_type} does not exist or has not been implemented yet.'
@@ -97,8 +101,6 @@ def generate_philly_gpu_jobs(philly_jobs: List['JobTrace'],
         np.random.gamma(shape=alpha, scale=1 / (alpha * arrival_rate))
         for _ in range(total_jobs - 1)
     ])
-    print(np.mean(interarrival_times))
-    exit(0)
     # interarrival_times = np.random.exponential(scale=1 / arrival_rate,
     #                                            size=total_jobs - 1)
     interarrival_times = np.insert(interarrival_times, 0, 0)
@@ -181,3 +183,37 @@ def generate_gpu_jobs(philly_jobs: List['JobTrace'],
                 resources=resources_dict,
                 cost=cost))
     return proc_jobs
+
+
+def process_helios_jobs(helios_jobs: List['HeliosJobTrace']):
+    """Converts entire Helios job trace into a list of simulator jobs.
+    """
+    jobs = helios_jobs.copy()
+    # Remove invalid jobs (jobs that have not finished and jobs that failed/killed early)
+    jobs = [
+        j for j in jobs
+        if j._run_time is not None and (j.status in ['COMPLETED', 'TIMEOUT'])
+    ]
+    jobs.sort(key=lambda j: j._submitted_time)
+
+    # Arrival time for jobs
+    start_time = jobs[0]._submitted_time
+    arrival_times = [(j._submitted_time - start_time).total_seconds() / 3600.0
+                     for j in jobs]
+
+    # Run time for jobs
+    run_times = [j._run_time for j in jobs]
+
+    # Get GPU resources
+    resources = []
+    for j in jobs:
+        resources.append({'GPUs': j.num_gpus, 'CPUs': j.num_cpus})
+
+    costs = [
+        res['GPUs'] * run + res['CPUs'] * run / 53.0
+        for res, run in zip(resources, run_times)
+    ]
+
+    return [Job(idx, arrival=arr, runtime=run, resources=res, cost=cost) \
+            for idx, (arr, run, res, cost) in \
+            enumerate(list(zip(arrival_times, run_times, resources, costs)))]

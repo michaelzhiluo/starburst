@@ -1,6 +1,8 @@
 class Node(object):
-    def __init__(self, num_gpus):
+    def __init__(self, num_gpus, num_cpus):
         self.num_gpus = num_gpus
+        self.num_cpus = num_cpus
+        self.free_gpus = self.num_cpus
         self.gpu_dict = {}
         self.reserved_gpus = {}
         for idx in range(self.num_gpus):

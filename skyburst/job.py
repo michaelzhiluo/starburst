@@ -5,7 +5,8 @@ class Job(object):
                  runtime: float = 0.0,
                  deadline: float = 0.0,
                  resources: dict = None,
-                 cost: float = 0.0):
+                 cost: float = 0.0,
+                 nodes: int = 0):
         self.idx = idx
         self.arrival = arrival
         self.runtime = runtime

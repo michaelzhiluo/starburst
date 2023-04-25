@@ -6,11 +6,16 @@ class Cluster(object):
     def __init__(self,
                  num_nodes,
                  num_gpus_per_node=8,
+                 num_cpus_per_node=96,
                  binpack='first-fit',
                  backfill=False):
         self.num_nodes = num_nodes
         self.num_gpus_per_node = num_gpus_per_node
-        self.nodes = [Node(num_gpus_per_node) for _ in range(num_nodes)]
+        self.num_cpus_per_node = num_cpus_per_node
+        self.nodes = [
+            Node(num_gpus_per_node, num_cpus_per_node)
+            for _ in range(num_nodes)
+        ]
         self.active_jobs = {}
         self.reserved_jobs = {}
         self.backfill = backfill

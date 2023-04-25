@@ -33,7 +33,7 @@ if __name__ == '__main__':
     # Arguments for Data Generation
     parser.add_argument("--dataset",
                         type=str,
-                        choices=["philly", "philly_gen", "gen_gpu"],
+                        choices=["philly", "philly_gen", "gen_gpu", "helios"],
                         default='philly',
                         help='Choose dataset to run simulator from.')
     parser.add_argument('--arrival_rate',

@@ -7,6 +7,7 @@ from skyburst import job_gen, run_simulator
 def generate_data_run_simulator(run_config):
     proc_jobs = job_gen.load_processed_jobs(
         dataset_config=run_config['jobgen_spec'])
+
     run_simulator(proc_jobs, run_config)
 
 
@@ -18,7 +19,7 @@ if __name__ == '__main__':
     # Arguments for Data Generation
     parser.add_argument("--dataset",
                         type=str,
-                        choices=["philly", "philly_gen", "gen_gpu"],
+                        choices=["philly", "philly_gen", "gen_gpu", 'helios'],
                         default='philly',
                         help='Choose dataset to run simulator from.')
     parser.add_argument('--arrival_rate',
