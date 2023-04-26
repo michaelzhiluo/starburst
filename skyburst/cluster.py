@@ -64,7 +64,6 @@ class Cluster(object):
         node_free_gpu_list = [
             list(range(self.num_gpus_per_node)) for _ in range(self.num_nodes)
         ]
-        node_free_gpu_count = [self.num_gpus_per_node] * self.num_nodes
         node_free_cpu_count = [self.num_cpus_per_node] * self.num_nodes
 
         # Go through active jobs
@@ -73,7 +72,6 @@ class Cluster(object):
             for n_idx, gpu_list in a_job.allocated_gpus.items():
                 for gpu_idx in gpu_list:
                     node_free_gpu_list[n_idx].remove(gpu_idx)
-                node_free_gpu_count[n_idx] -= len(gpu_list)
                 node_free_cpu_count[n_idx] -= a_job_cpu_per_node
 
         # Go through reserved jobs
@@ -82,12 +80,11 @@ class Cluster(object):
                 r_job_cpu_per_node = r_job.num_cpus / r_job.nodes
                 for n_idx, gpu_list in r_job.allocated_gpus.items():
                     for gpu_idx in gpu_list:
-                        try:
+                        if not self.nodes[n_idx].gpu_dict[gpu_idx]:
                             node_free_gpu_list[n_idx].remove(gpu_idx)
-                        except ValueError:
-                            pass
-                node_free_gpu_count[n_idx] -= len(gpu_list)
                 node_free_cpu_count[n_idx] -= r_job_cpu_per_node
+
+        node_free_gpu_count = [len(g) for g in node_free_gpu_list]
 
         node_free_count = [(i, node_free_gpu_count[i], node_free_cpu_count[i])
                            for i in range(len(node_free_gpu_count))]
@@ -201,13 +198,12 @@ class Cluster(object):
                     node_free_gpu_count[n_idx] += 1
                 node_free_cpus[n_idx] += a_job.num_cpus / a_job.nodes
 
-            cur_job_gpu_demands = job_gpu_demands.copy()
-
             node_indexes = []
             for demand_idx, job_gpu_demand in enumerate(job_gpu_demands):
                 for node_idx, free_gpus_node in enumerate(node_free_gpu_count):
-                    if job_gpu_demand <= free_gpus_node - reserved_cpus[
-                            node_idx] and node_idx not in node_indexes:
+                    if job_gpu_demand == free_gpus_node \
+                        and num_cpus_per_node <= node_free_cpus[node_idx] - reserved_cpus[node_idx]\
+                        and node_idx not in node_indexes:
                         node_indexes.append(node_idx)
 
             if len(node_indexes) != len(job_gpu_demands):
