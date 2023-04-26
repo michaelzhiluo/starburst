@@ -100,6 +100,7 @@ def run_simulator(
     # Create fake cluster. The cluster is homogeneous.
     cluster = Cluster(num_nodes=simulator_spec['cluster_size'],
                       num_gpus_per_node=simulator_spec['gpus_per_node'],
+                      num_cpus_per_node=simulator_spec['cpus_per_node'],
                       backfill=backfill,
                       binpack=binpack_alg)
     t = 0
@@ -137,9 +138,17 @@ def run_simulator(
                 raise ValueError("Should not have entered here!")
             elif job.arrival == t:
                 jobs.remove(job)
-                job.set_deadline(deadline=waiting_fn(job))
-                queue.append(job)
-                pbar.update(1)
+                deadline = waiting_fn(job)
+                if deadline == -1:
+                    job.state = 'TIMEOUT-CLOUD'
+                    job.start = job.arrival
+                    job.set_deadline(deadline=job.arrival + job.runtime)
+                    cloud_cost += job.cost
+                    finished_jobs.append(job)
+                else:
+                    job.set_deadline(deadline=deadline)
+                    queue.append(job)
+                    pbar.update(1)
             else:
                 break
 
@@ -259,13 +268,11 @@ def run_simulator(
             continue
         # Moved to cloud
         if job.state == 'TIMEOUT-CLOUD':
-            assert job.start is not None
             total_waiting_time += job.start - job.arrival
             if inter_end >= inter_start:
                 sum_cloud_space += job.num_gpus * (inter_end - inter_start)
             total_cloud_cost += job.cost
         elif job.state == 'LOCAL':
-            assert job.state == 'LOCAL'
             total_waiting_time += job.start - job.arrival
             if inter_end >= inter_start:
                 sum_local_space += job.num_gpus * (inter_end - inter_start)

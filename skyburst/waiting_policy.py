@@ -13,6 +13,9 @@ def lookup_linear_function(func_type, waiting_factor=1):
     elif func_type == 'linear_runtime':
         return lambda x: deadline_linear_runtime_fn(
             x, waiting_factor=waiting_factor)
+    elif func_type == 'linear_runtime_filter_cpu':
+        return lambda x: deadline_linear_runtime_filter_cpu_fn(
+            x, waiting_factor=waiting_factor)
     elif func_type == 'linear_runtime_cap':
         return lambda x: deadline_linear_runtime_cap_fn(
             x, waiting_factor=waiting_factor)
@@ -25,6 +28,9 @@ def lookup_linear_function(func_type, waiting_factor=1):
     elif func_type == 'quad_capacity':
         return lambda x: deadline_quad_capacity_fn(
             x, waiting_factor=waiting_factor)
+    elif func_type == 'linear_cost':
+        return lambda x: deadline_linear_cost_fn(x,
+                                                 waiting_factor=waiting_factor)
     else:
         raise ValueError(f'Waiting policy {func_type} does not exist.')
 
@@ -46,6 +52,15 @@ def deadline_constant_fn(job: Job, waiting_factor=1):
 
 # Linear Waiting policy, all jobs wait as a linear function of their runtimes.
 def deadline_linear_runtime_fn(job: Job, waiting_factor=1.25):
+    waiting_time = (waiting_factor - 1) * job.runtime
+    waiting_time = max(1 / 12.0, waiting_time)
+    return job.arrival + waiting_time + job.runtime
+
+
+# Linear Waiting policy, all jobs wait as a linear function of their runtimes.
+def deadline_linear_runtime_filter_cpu_fn(job: Job, waiting_factor=1.25):
+    if job.resources['GPUs'] == 0:
+        return -1
     waiting_time = (waiting_factor - 1) * job.runtime
     waiting_time = max(1 / 12.0, waiting_time)
     return job.arrival + waiting_time + job.runtime
@@ -75,6 +90,10 @@ def deadline_log_capacity_fn(job: Job, waiting_factor=1):
     if num_gpus == 0:
         return job.arrival + job.runtime
     return job.arrival + waiting_factor * (1 + np.log2(num_gpus)) + job.runtime
+
+
+def deadline_linear_cost_fn(job: Job, waiting_factor=1):
+    return job.arrival + waiting_factor * job.cost + job.runtime
 
 
 # Jobs wait as a function of its surface area (resource * runtime).

@@ -203,17 +203,16 @@ def process_helios_jobs(helios_jobs: List['HeliosJobTrace']):
 
     # Run time for jobs
     run_times = [j._run_time for j in jobs]
+    nodes = [j._nodes for j in jobs]
 
     # Get GPU resources
     resources = []
     for j in jobs:
         resources.append({'GPUs': j.num_gpus, 'CPUs': j.num_cpus})
 
-    costs = [
-        res['GPUs'] * run + res['CPUs'] * run / 53.0
-        for res, run in zip(resources, run_times)
-    ]
+    costs = [(res['GPUs'] + res['CPUs'] / 53.0) * run
+             for res, run in zip(resources, run_times)]
 
-    return [Job(idx, arrival=arr, runtime=run, resources=res, cost=cost) \
-            for idx, (arr, run, res, cost) in \
-            enumerate(list(zip(arrival_times, run_times, resources, costs)))]
+    return [Job(idx, arrival=arr, runtime=run, resources=res, cost=cost, nodes=node) \
+            for idx, (arr, run, res, cost, node) in \
+            enumerate(list(zip(arrival_times, run_times, resources, costs, nodes)))]

@@ -49,3 +49,43 @@ python run_simulator_sweep.py \
 --backfill 1 \
 --predict_wait 1 \
 --seed 5
+
+
+# Run Helios Venus trace (arrival and job char. depends on trace)
+# Vary Waiting policy
+python run_simulator_sweep.py \
+--dataset helios \
+--cluster_size 16 20 24 28 32 36 40 44 48 \
+52 56 60 64 68 72 76 80 84 88 92 96 100 \
+104 108 112 116 120 124 132 136 140 144 \
+--sched_alg fifo \
+--waiting_policy zero-1 linear_runtime-1.25 linear_cost-0.04 \
+linear_runtime_filter_cpu-1.25 constant-0.454 \
+--seed 2024
+
+
+# Run Helios Venus trace (arrival and job char. depends on trace)
+# Vary Scheudling algorithm (not much difference)
+python run_simulator_sweep.py \
+--dataset helios \
+--cluster_size 16 20 24 28 32 36 40 44 48 \
+52 56 60 64 68 72 76 80 84 88 92 96 100 \
+104 108 112 116 120 124 132 136 140 144 \
+--sched_alg fifo lifo swf sjf ljf \
+--waiting_policy zero-1 linear_runtime-1.25 \
+--predict_wait 1 \
+--seed 5
+
+
+
+# Check if loop works
+python run_simulator_sweep.py \
+--dataset helios \
+--cluster_size 16 20 24 28 32 36 40 44 48 \
+52 56 60 64 68 72 76 80 84 88 92 96 100 \
+104 108 112 116 120 124 132 136 140 144 \
+--sched_alg fifo \
+--waiting_policy zero-1 linear_runtime-1.25 \
+--predict_wait 1 \
+--loop 0 1 \
+--seed 5

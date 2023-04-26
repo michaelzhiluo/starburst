@@ -6,7 +6,7 @@ class Job(object):
                  deadline: float = 0.0,
                  resources: dict = None,
                  cost: float = 0.0,
-                 nodes: int = 0):
+                 nodes: int = 1):
         self.idx = idx
         self.arrival = arrival
         self.runtime = runtime
@@ -25,6 +25,7 @@ class Job(object):
             self.num_cpus = 0
 
         self.cost = cost
+        self.nodes = nodes
 
         # State of the Job
         self.state = None
