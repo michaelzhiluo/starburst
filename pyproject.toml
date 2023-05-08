@@ -14,7 +14,7 @@ classifiers = [
 ]
 dependencies = [
     "cvxpy", "matplotlib", "seaborn", "jupyter",
-    "fastapi", "uvicorn", "kubernetes", "aiohttp", "click", "pydantic"
+    "fastapi", "uvicorn", "kubernetes", "httpx", "click", "pydantic"
 ]
 
 [project.optional-dependencies]
