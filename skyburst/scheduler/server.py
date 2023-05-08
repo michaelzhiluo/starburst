@@ -1,9 +1,8 @@
-import aiohttp
 import asyncio
-from datetime import datetime
 
 import click
 from fastapi import FastAPI, BackgroundTasks
+import httpx
 from kubernetes import client, config, watch
 from pydantic import BaseModel
 
@@ -36,12 +35,12 @@ async def submit_job_async(job_spec):
         "Authorization": f"Bearer {config.kube_config.Configuration().api_key['authorization']}"
     }
 
-    async with aiohttp.ClientSession() as session:
-        async with session.post(url, json=job_spec, headers=headers) as response:
-            if response.status == 201:
-                print(f"Job {job_spec['metadata']['name']} submitted")
-            else:
-                print(f"Error: {response.status}")
+    async with httpx.AsyncClient() as client:
+        response = await client.post(url, headers=headers, json=job_spec)
+        if response.status_code == 201:
+            print(f"Job {job_spec['metadata']['name']} submitted")
+        else:
+            print(f"Error: {response.status_code}")
 
 
 async def cancel_job_async(job_name):
@@ -55,12 +54,12 @@ async def cancel_job_async(job_name):
         "Authorization": f"Bearer {config.kube_config.Configuration().api_key['authorization']}"
     }
 
-    async with aiohttp.ClientSession() as session:
-        async with session.delete(url, headers=headers) as response:
-            if response.status == 200:
-                print(f"Job {job_name} canceled")
-            else:
-                print(f"Error: {response.status}")
+    async with httpx.AsyncClient() as client:
+        response = await client.delete(url, headers=headers)
+        if response.status_code == 200:
+            print(f"Job {job_name} canceled")
+        else:
+            print(f"Error: {response.status_code}")
 
 
 async def job_completion_handler(job_name, job_duration):
