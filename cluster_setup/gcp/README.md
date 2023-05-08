@@ -91,21 +91,6 @@ Creating a Kubernetes cluster with 8 V100 GPUs on GCP and deploying Kubeflow inv
       kfctl apply -V -f ${CONFIG_URI}
       ```
 
-5. Submit PyTorchJob using Kubeflow Operator:
-   a. Create a YAML file (e.g., `pytorchjob.yaml`) containing the following PyTorchJob definition:
-
-      ```yaml
-      apiVersion: kubeflow.org/v1
-      kind: PyTorchJob
-      metadata:
-        name: pytorch-job
-      spec:
-        pytorchReplicaSpecs:
-          Master:
-            replicas: 1
-            restartPolicy: OnFailure
-            template:
-
 
 ### Kuberflow pytorch jobs
 

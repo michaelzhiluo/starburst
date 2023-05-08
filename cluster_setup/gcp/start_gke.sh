@@ -2,9 +2,10 @@
 CLUSTER_NAME=skyburst-gpu
 ZONE=us-central1-c
 POOL_NAME=gpu-pool
+NUM_NODES=1
 
 gcloud container clusters create $CLUSTER_NAME \
-    --num-nodes 1 \
+    --num-nodes $NUM_NODES \
     --accelerator "type=nvidia-tesla-v100,count=8" \
     --machine-type n1-standard-96 \
     --zone $ZONE \
@@ -20,7 +21,7 @@ gcloud container node-pools create $POOL_NAME \
   --cluster $CLUSTER_NAME \
   --machine-type n1-standard-96 \
   --accelerator "type=nvidia-tesla-v100,count=8" \
-  --num-nodes 1 \
+  --num-nodes $NUM_NODES \
   --zone $ZONE
 
 # delete the cluster
