@@ -2,3 +2,10 @@ cvxpy
 matplotlib
 seaborn
 jupyter
+# scheduler
+fastapi
+uvicorn
+kubernetes
+aiohttp
+click
+pydantic

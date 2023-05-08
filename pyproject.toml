@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "skyburst"
+version = "0.0.1"
+description = "SkyBurst is ....."
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+]
+dependencies = [
+    "cvxpy", "matplotlib", "seaborn", "jupyter",
+    "fastapi", "uvicorn", "kubernetes", "aiohttp", "click", "pydantic"
+]
+
+[project.optional-dependencies]
+dev = ["black==23.3.0", "pylint==2.8.2"]
+
+[project.urls]
+"Homepage" = "https://github.com/michaelzhiluo/skyburst"
+"Bug Tracker" = "https://github.com/michaelzhiluo/skyburst/issues"
+
+[tool.setuptools.packages.find]
+exclude = ["simulators", "docs", "scripts*", "tests*"]
+
+[tool.wheel]
+exclude = ["simulators", "docs", "scripts*", "tests*"]
