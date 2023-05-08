@@ -12,10 +12,11 @@ config.load_kube_config()
 kube_client = client.BatchV1Api()
 
 app = FastAPI()
-NAMESPACE = "default"
-API_DOMAIN = "kubeflow.org"
+API_GROUP = "kubeflow.org"
 API_VERSION = "v1"
+NAMESPACE = "default"
 API_PLURAL = "pytorchjobs"
+
 
 class JobSchema(BaseModel):
     apiVersion: str
@@ -28,7 +29,7 @@ async def submit_job_async(job_spec):
     # Submit the Kubernetes job using the provided job specification
     config.load_kube_config()
     api_base = config.kube_config.Configuration().host
-    url = f"{api_base}/apis/{API_DOMAIN}/{API_VERSION}/namespaces/{NAMESPACE}/{API_PLURAL}"
+    url = f"{api_base}/apis/{API_GROUP}/{API_VERSION}/namespaces/{NAMESPACE}/{API_PLURAL}"
 
     headers = {
         "Content-Type": "application/json",
@@ -47,7 +48,7 @@ async def cancel_job_async(job_name):
     # Cancel the specified PyTorchJob in the Kubernetes cluster
     config.load_kube_config()
     api_base = config.kube_config.Configuration().host
-    url = f"{api_base}/apis/{API_DOMAIN}/{API_VERSION}/namespaces/{NAMESPACE}/{API_PLURAL}/{job_name}"
+    url = f"{api_base}/apis/{API_GROUP}/{API_VERSION}/namespaces/{NAMESPACE}/{API_PLURAL}/{job_name}"
 
     headers = {
         "Content-Type": "application/json",
@@ -70,7 +71,7 @@ async def job_completion_handler(job_name, job_duration):
 async def watch_jobs():
     # Monitor the status of submitted jobs and trigger appropriate event handlers
     w = watch.Watch()
-    for event in w.stream(kube_client.list_namespaced_custom_object, group=API_DOMAIN, version=API_VERSION, namespace=NAMESPACE, plural=API_PLURAL):
+    for event in w.stream(kube_client.list_namespaced_custom_object, group=API_GROUP, version=API_VERSION, namespace=NAMESPACE, plural=API_PLURAL):
         pytorch_job = event["object"]
         job_name = pytorch_job["metadata"]["name"]
         job_status = pytorch_job["status"]
