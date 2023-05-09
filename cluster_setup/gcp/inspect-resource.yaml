@@ -1,16 +1,16 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: pytorch-simple
+  name: inspect-resource
 spec:
+  backoffLimit: 0
   template:
-    metadata:
-      labels:
-        app: pytorch-simple
     spec:
       containers:
         - name: pytorch
-          image: docker.io/kubeflowkatib/pytorch-mnist:v1beta1-45c5727
+          # https://hub.docker.com/r/pytorch/pytorch/tags
+          # https://cloud.google.com/deep-learning-containers/docs/choosing-container
+          image: gcr.io/deeplearning-platform-release/pytorch-gpu.1-12
           resources:
             limits:
               cpu: "4"
@@ -18,10 +18,10 @@ spec:
             requests:
               cpu: "4"
           imagePullPolicy: Always
-          command:
-            - "python3"
-            - "/opt/pytorch-mnist/mnist.py"
-            - "--epochs=1"
+          command: ["/bin/bash", "-c"]
+          args:
+          - |
+            python -V && nvidia-smi
       nodeSelector:
         cloud.google.com/gke-nodepool: gpu-pool
       restartPolicy: Never
