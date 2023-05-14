@@ -11,10 +11,10 @@ spec:
           image: gcr.io/sky-burst/skyburst:latest
           resources:
             limits:
-              cpu: "4"
-              nvidia.com/gpu: "1"
+              cpu: "48"
+              nvidia.com/gpu: "4"
             requests:
-              cpu: "4"
+              cpu: "48"
           imagePullPolicy: Always
           command: ["/bin/bash", "-c"]
           args:
