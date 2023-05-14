@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pytorch-cifar10-resnet50
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      containers:
+        - name: pytorch
+          image: gcr.io/sky-burst/skyburst:latest
+          resources:
+            limits:
+              cpu: "4"
+              nvidia.com/gpu: "1"
+            requests:
+              cpu: "4"
+          imagePullPolicy: Always
+          command: ["/bin/bash", "-c"]
+          args:
+          - |
+            python /tasks/pytorch-cifar10-resnet50.py
+      nodeSelector:
+        cloud.google.com/gke-nodepool: gpu-pool
+      restartPolicy: Never
