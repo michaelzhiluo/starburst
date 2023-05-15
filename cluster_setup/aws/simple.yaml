@@ -1,0 +1,26 @@
+apiVersion: "kubeflow.org/v1"
+kind: PyTorchJob
+metadata:
+  name: pytorch-simple
+  namespace: kubeflow
+spec:
+  pytorchReplicaSpecs:
+    Master:
+      replicas: 1
+      restartPolicy: OnFailure
+      template:
+        spec:
+          containers:
+            - name: pytorch
+              image: docker.io/kubeflowkatib/pytorch-mnist:v1beta1-45c5727
+              resources:
+                limits:
+                  cpu: "4"
+                  nvidia.com/gpu: "1"
+              imagePullPolicy: Always
+              command:
+                - "python3"
+                - "/opt/pytorch-mnist/mnist.py"
+                - "--epochs=1"
+          nodeSelector:
+            beta.kubernetes.io/instance-type: p3.16xlarge

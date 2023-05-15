@@ -1,4 +1,0 @@
-cvxpy
-matplotlib
-seaborn
-jupyter
