@@ -1,5 +1,8 @@
 import argparse
-from transformers import BertConfig, BertForMaskedLM
+import multiprocessing
+
+num_cpu = multiprocessing.cpu_count()
+from transformers import BertConfig, BertForMaskedLM, BertTokenizerFast
 from transformers import Trainer, TrainingArguments
 from datasets import load_dataset
 
@@ -43,7 +46,7 @@ model = BertForMaskedLM(config)
 # ====================================================
 # name                     train    validation    test
 # ----------------------------------------------------
-# wmt16 (de-en)            29000          1014    1000
+# wmt16 (de-en)          4548885          1014    1000
 # wikitext-103-raw-v1    1801350          3760    4358
 # wikitext-103-v1        1801350          3760    4358
 # wikitext-2-raw-v1        36718          3760    4358
@@ -62,6 +65,19 @@ elif args.dataset == 'wikitext-2':
     dataset = load_dataset('wikitext', 'wikitext-2-raw-v1')
 
 
+# Load the BERT tokenizer
+tokenizer = BertTokenizerFast.from_pretrained('bert-base-uncased')
+
+
+# Tokenize the dataset
+def tokenize_function(examples):
+    tokenized_input = tokenizer(examples["text"], truncation=True, padding="max_length", max_length=512)
+    tokenized_input["labels"] = tokenized_input["input_ids"].copy()
+    return tokenized_input
+
+
+tokenized_datasets = dataset.map(tokenize_function, batched=True, num_proc=num_cpu, remove_columns=["text"])
+
 # Define the training arguments
 training_args = TrainingArguments(
     output_dir=args.output_dir,
@@ -75,7 +91,7 @@ training_args = TrainingArguments(
     fp16=True,
     gradient_accumulation_steps=args.gradient_accumulation_steps,
     do_train=True,
-    do_eval=True,
+    # do_eval=True,
 )
 
 # Define the trainer
@@ -83,7 +99,7 @@ trainer = Trainer(
     model=model,
     args=training_args,
     train_dataset=dataset['train'],
-    eval_dataset=dataset['validation'],
+    # eval_dataset=dataset['validation'],
 )
 
 # Train the model
