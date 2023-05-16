@@ -97,7 +97,7 @@ training_args = TrainingArguments(
 trainer = Trainer(
     model=model,
     args=training_args,
-    train_dataset=dataset['train'],
+    train_dataset=tokenized_datasets['train'],
     # eval_dataset=dataset['validation'],
 )
 
