@@ -12,10 +12,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', type=str, default='wmt16')
 
 parser.add_argument('--vocab_size', type=int, default=30522)
-parser.add_argument('--hidden_size', type=int, default=768)
-parser.add_argument('--num_hidden_layers', type=int, default=12)
-parser.add_argument('--num_attention_heads', type=int, default=12)
-parser.add_argument('--intermediate_size', type=int, default=3072)
+parser.add_argument('--hidden_size', type=int, default=256)
+parser.add_argument('--num_hidden_layers', type=int, default=4)
+parser.add_argument('--num_attention_heads', type=int, default=4)
 
 parser.add_argument('--output_dir', type=str, default='./results')
 parser.add_argument('--num_train_epochs', type=int, default=3)
@@ -36,7 +35,7 @@ config = BertConfig(
   hidden_size=args.hidden_size,
   num_hidden_layers=args.num_hidden_layers,
   num_attention_heads=args.num_attention_heads,
-  intermediate_size=args.intermediate_size
+  intermediate_size=args.hidden_size * 4
 )
 
 # Instantiate a new BERT model
