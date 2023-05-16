@@ -70,6 +70,10 @@ elif args.dataset == 'wikitext-2':
 # Load the GPT2 tokenizer
 tokenizer = GPT2TokenizerFast.from_pretrained('gpt2')
 
+# Set the padding token
+tokenizer.pad_token = tokenizer.eos_token
+
+
 # Tokenize the dataset
 def tokenize_function(examples):
     tokenized_input = tokenizer(examples["text"], truncation=True, padding="max_length", max_length=512)
