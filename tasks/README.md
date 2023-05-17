@@ -46,3 +46,27 @@ time python huggingface-gpt.py --dataset wikitext-103 --per_device_train_batch_s
 2 GPU: 12-13h
 4 GPU: 9-10h
 8 GPU: 7-8h
+
+
+## huggingface-bert_wikitext-2
+
+```bash
+python huggingface-bert.py --dataset wikitext-2 --num_train_epochs 1
+```
+
+1 GPU: 3-4m
+2 GPU: 2-3m
+4 GPU: 3-4m
+8 GPU: 3-4m
+
+## huggingface-bert_wikitext-103
+
+```bash
+python huggingface-bert.py --dataset wikitext-103 --num_train_epochs 1
+```
+
+1 GPU: 2.5h
+2 GPU: 2h
+4 GPU: 2h
+8 GPU: 2h
+
