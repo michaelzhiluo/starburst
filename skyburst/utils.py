@@ -93,7 +93,7 @@ def generate_cartesian_product(d: dict):
 
 
 def is_subset(list1: List[Any], list2: List[Any]):
-    """Checks if list1 is a subset of list2 and returns the matching indexes of the subset."""
+    """Checks if list2 is a subset of list1 and returns the matching indexes of the subset."""
     indexes = []
     for i2, elem in enumerate(list2):
         for i1, x in enumerate(list1):
@@ -112,6 +112,9 @@ def _load_logs(file_path: str):
 
 def load_logs_as_dataframe(file_path: str):
     simulator_results = _load_logs(file_path)
+    for r in simulator_results:
+        if 'snapshot' in r:
+            r['snapshot'] = [r['snapshot']]
     simulator_results = [
         flatten_dict(r, preserve_name=True) for r in simulator_results
     ]

@@ -15,7 +15,7 @@ def generate_data_run_simulator(run_config):
     return run_simulator(proc_jobs, run_config)
 
 
-def run_grid_search(run_configs, num_procs=62):
+def run_grid_search(run_configs, num_procs=63):
     for i, r in enumerate(run_configs):
         r['pbar_idx'] = i
     run_configs = [[r] for r in run_configs]
@@ -33,7 +33,10 @@ if __name__ == '__main__':
     # Arguments for Data Generation
     parser.add_argument("--dataset",
                         type=str,
-                        choices=["philly", "philly_gen", "gen_gpu", "helios"],
+                        choices=[
+                            "philly", "philly_gen", "gen_gpu", "helios",
+                            "synthetic", "helios_gen"
+                        ],
                         default='philly',
                         help='Choose dataset to run simulator from.')
     parser.add_argument('--arrival_rate',
@@ -67,7 +70,7 @@ if __name__ == '__main__':
                         help='Number of GPU(s) per cluster node')
     parser.add_argument('--cpus_per_node',
                         type=int,
-                        default=96,
+                        default=48,
                         help='Number of CPU(s) per cluster node')
 
     # Arguments for Policy specifications.
@@ -88,6 +91,11 @@ if __name__ == '__main__':
         nargs='+',
         default='linear_runtime',
         help='Waiting policy (how long jobs should at max wait in the cloud).')
+    parser.add_argument('--clip_time',
+                        type=float,
+                        default=1e9,
+                        nargs='+',
+                        help='Sets maximum clipping time for a job.')
     parser.add_argument('--backfill',
                         type=int,
                         nargs='+',
@@ -107,10 +115,20 @@ if __name__ == '__main__':
         type=int,
         nargs='+',
         default=0,
-        choices=[0, 1],
+        choices=[0, 1, 2],
         help=
         'Enable prediction. (Jobs predict if they can be assigned to cluster before timing out)'
     )
+    parser.add_argument('--time_estimator_error',
+                        type=int,
+                        nargs='+',
+                        default=0,
+                        help='Time estimator error')
+    parser.add_argument('--max_queue_length',
+                        type=int,
+                        default=-1,
+                        nargs='+',
+                        help='Sets maximum length for queue.')
     parser.add_argument('--seed',
                         type=int,
                         default=2024,
@@ -128,6 +146,20 @@ if __name__ == '__main__':
         help=
         'Jobs to not consider for final metrics at the beg. and end. of simulator'
     )
+    parser.add_argument(
+        '--log',
+        type=str,
+        default=None,
+        help='Specifies where to save the simulator sweep results.')
+
+    parser.add_argument(
+        '--snapshot',
+        type=int,
+        default=0,
+        choices=[0, 1],
+        help=
+        'Specifies whether to save queue state at the end of each iteration. (This is used for underutilization analysis.)'
+    )
 
     args = parser.parse_args()
     grid_search_config = {
@@ -141,11 +173,15 @@ if __name__ == '__main__':
         'waiting_policy': args.waiting_policy,
         'backfill': args.backfill,
         'loop': args.loop,
+        'clip_time': args.clip_time,
         'predict_wait': args.predict_wait,
         # Simulator config
         'verbose': args.verbose,
         'debug': args.debug,
         'warmup_jobs': args.warmup_jobs,
+        'snapshot': args.snapshot,
+        'max_queue_length': args.max_queue_length,
+        'time_estimator_error': args.time_estimator_error,
         'jobgen_spec': {
             'dataset': args.dataset,
             'arrival_rate': args.arrival_rate,
@@ -157,8 +193,23 @@ if __name__ == '__main__':
     }
     grid_search_config = utils.convert_to_lists(grid_search_config)
     run_configs = utils.generate_cartesian_product(grid_search_config)
+
+    temp = []
+    print(len(run_configs))
+    for r in run_configs:
+        if r['waiting_policy'].split('-')[0] == 'constant' and r['loop'] == 1:
+            continue
+        temp.append(r)
+    print(len(temp))
+    run_configs = temp
+    import pdb
+    pdb.set_trace()
+
     final_simulator_results = run_grid_search(run_configs)
-    file_path = f'/home/gcpuser/sim_logs/{args.dataset}/vary_cv_{args.seed}.log'
+    if args.log:
+        file_path = args.log
+    else:
+        file_path = f'/home/gcpuser/sim_logs/{args.dataset}/vary_cv_{args.seed}.log'
     absolute_file_path = os.path.abspath(file_path)
     dir_path = os.path.dirname(absolute_file_path)
     os.system(f'mkdir -p {dir_path}')

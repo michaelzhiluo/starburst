@@ -42,6 +42,24 @@ def load_processed_jobs(dataset_config: Dict[str, Any]):
     elif dataset_type == 'helios':
         helios_jobs = helios.load_helios_traces('~/HeliosData/data/Venus')
         return process_helios_jobs(helios_jobs)
+    elif dataset_type == 'helios_gen':
+        helios_jobs = helios.load_helios_traces('~/HeliosData/data/Venus')
+        dataset_kwargs = {
+            'total_jobs': dataset_config['total_jobs'],
+            'arrival_rate': dataset_config['arrival_rate'],
+            'cv_factor': dataset_config['cv_factor'],
+            'seed': dataset_config['seed'],
+        }
+        return generate_helios_jobs(helios_jobs, **dataset_kwargs)
+    elif dataset_type == 'synthetic':
+        dataset_kwargs = {
+            'total_jobs': dataset_config['total_jobs'],
+            'arrival_rate': dataset_config['arrival_rate'],
+            'job_runtime': dataset_config['job_runtime'],
+            'cv_factor': dataset_config['cv_factor'],
+            'seed': dataset_config['seed'],
+        }
+        return generate_synthetic_jobs(**dataset_kwargs)
     else:
         raise ValueError(
             f'Dataset {dataset_type} does not exist or has not been implemented yet.'
@@ -81,7 +99,7 @@ def process_philly_jobs(philly_jobs: List['JobTrace']):
 def generate_philly_gpu_jobs(philly_jobs: List['JobTrace'],
                              arrival_rate=32.0,
                              cv_factor=1.0,
-                             total_jobs=200000,
+                             total_jobs=300000,
                              seed=2024):
     """Generates Philly jobs based on a Poisson arrival distribution.
 
@@ -134,6 +152,66 @@ def generate_philly_gpu_jobs(philly_jobs: List['JobTrace'],
                 runtime=runtime,
                 resources=resources_dict,
                 cost=cost))
+    return proc_jobs
+
+
+def generate_helios_jobs(helios_jobs: List['HeliosJobTrace'],
+                         arrival_rate=32.0,
+                         cv_factor=1.0,
+                         total_jobs=300000,
+                         seed=2024):
+    """Converts entire Helios job trace into a list of simulator jobs.
+    """
+    jobs = helios_jobs.copy()
+    # Remove invalid jobs (jobs that have not finished and jobs that failed/killed early)
+    jobs = [
+        j for j in jobs
+        if j._run_time is not None and (j.status in ['COMPLETED', 'TIMEOUT'])
+    ]
+    jobs.sort(key=lambda j: j._submitted_time)
+
+    # Arrival time for jobs
+    np.random.seed(seed)
+    alpha = (1.0 / cv_factor)**2
+    interarrival_times = np.array([
+        np.random.gamma(shape=alpha, scale=1 / (alpha * arrival_rate))
+        for _ in range(total_jobs - 1)
+    ])
+    # interarrival_times = np.random.exponential(scale=1 / arrival_rate,
+    #                                            size=total_jobs - 1)
+    interarrival_times = np.insert(interarrival_times, 0, 0)
+    arrival_times = np.cumsum(interarrival_times)
+
+    # Run time for jobs
+    run_times = [j._run_time for j in jobs]
+    nodes = [j._nodes for j in jobs]
+
+    # Get GPU resources
+    resources = []
+    for j in jobs:
+        resources.append({'GPUs': j.num_gpus, 'CPUs': j.num_cpus})
+
+    costs = [(res['GPUs'] + res['CPUs'] / 53.0) * run
+             for res, run in zip(resources, run_times)]
+
+    np.random.seed(seed)
+    job_indexes = np.random.choice(list(range(len(run_times))),
+                                   size=total_jobs,
+                                   replace=True)
+    proc_jobs = []
+    for idx in range(total_jobs):
+        job_idx = job_indexes[idx]
+        resources_dict = resources[job_idx]
+        runtime = run_times[job_idx]
+        cost = costs[job_idx]
+        num_nodes = nodes[job_idx]
+        proc_jobs.append(
+            Job(idx,
+                arrival=arrival_times[idx],
+                runtime=runtime,
+                resources=resources_dict,
+                cost=cost,
+                nodes=num_nodes))
     return proc_jobs
 
 
@@ -216,3 +294,41 @@ def process_helios_jobs(helios_jobs: List['HeliosJobTrace']):
     return [Job(idx, arrival=arr, runtime=run, resources=res, cost=cost, nodes=node) \
             for idx, (arr, run, res, cost, node) in \
             enumerate(list(zip(arrival_times, run_times, resources, costs, nodes)))]
+
+
+def generate_synthetic_jobs(arrival_rate=8.0,
+                            job_runtime=1.0,
+                            cv_factor=1.0,
+                            total_jobs=20000,
+                            seed=2024):
+    """Generates GPU jobs based on a Poisson arrival distribution and exponential runtime distribution.
+    """
+    total_jobs = total_jobs
+
+    # Arrival time for jobs
+    np.random.seed(seed)
+    alpha = (1.0 / cv_factor)**2
+    interarrival_times = np.array([
+        np.random.gamma(shape=alpha, scale=1 / (alpha * arrival_rate))
+        for _ in range(total_jobs - 1)
+    ])
+    # interarrival_times = np.random.exponential(scale=1 / arrival_rate,
+    #                                            size=total_jobs - 1)
+    interarrival_times = np.insert(interarrival_times, 0, 0)
+    arrival_times = np.cumsum(interarrival_times)
+
+    # Run time for jobs
+    run_times = np.random.exponential(scale=job_runtime, size=total_jobs)
+
+    # Get GPU resources
+    proc_jobs = []
+    for idx in range(total_jobs):
+        resources_dict = {'GPUs': 8}
+        cost = resources_dict['GPUs'] * run_times[idx]
+        proc_jobs.append(
+            Job(idx,
+                arrival=arrival_times[idx],
+                runtime=run_times[idx],
+                resources=resources_dict,
+                cost=cost))
+    return proc_jobs

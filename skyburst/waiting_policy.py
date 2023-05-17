@@ -31,6 +31,12 @@ def lookup_linear_function(func_type, waiting_factor=1):
     elif func_type == 'linear_cost':
         return lambda x: deadline_linear_cost_fn(x,
                                                  waiting_factor=waiting_factor)
+    elif func_type == 'linear_cost_filter_cpu':
+        return lambda x: deadline_linear_cost_filter_cpu_fn(
+            x, waiting_factor=waiting_factor)
+    elif func_type == 'linear_capacity_filter_cpu':
+        return lambda x: deadline_linear_capacity_filter_cpu_fn(
+            x, waiting_factor=waiting_factor)
     else:
         raise ValueError(f'Waiting policy {func_type} does not exist.')
 
@@ -53,13 +59,24 @@ def deadline_constant_fn(job: Job, waiting_factor=1):
 # Linear Waiting policy, all jobs wait as a linear function of their runtimes.
 def deadline_linear_runtime_fn(job: Job, waiting_factor=1.25):
     waiting_time = (waiting_factor - 1) * job.runtime
-    waiting_time = max(1 / 12.0, waiting_time)
+    # waiting_time = max(1 / 12.0, waiting_time)
     return job.arrival + waiting_time + job.runtime
 
 
 # Linear Waiting policy, all jobs wait as a linear function of their runtimes.
 def deadline_linear_runtime_filter_cpu_fn(job: Job, waiting_factor=1.25):
     if job.resources['GPUs'] == 0:
+        return -1
+    waiting_time = (waiting_factor - 1) * job.runtime
+    # waiting_time = max(1 / 12.0, waiting_time)
+    return job.arrival + waiting_time + job.runtime
+
+
+# Linear Waiting policy, all jobs wait as a linear function of their runtimes.
+def deadline_linear_runtime_filter_bad_fn(job: Job, waiting_factor=1.25):
+    if job.resources['GPUs'] == 0:
+        return -1
+    if job.resources['GPUs'] > 1 and job.runtime < 0.1:
         return -1
     waiting_time = (waiting_factor - 1) * job.runtime
     waiting_time = max(1 / 12.0, waiting_time)
@@ -75,6 +92,12 @@ def deadline_linear_runtime_cap_fn(job: Job, waiting_factor=1.25):
 
 # Jobs wait as a linear function of resource request.
 def deadline_linear_capacity_fn(job: Job, waiting_factor=1):
+    return job.arrival + waiting_factor * job.resources['GPUs'] + job.runtime
+
+
+def deadline_linear_capacity_filter_cpu_fn(job: Job, waiting_factor=1):
+    if job.resources['GPUs'] == 0:
+        return -1
     return job.arrival + waiting_factor * job.resources['GPUs'] + job.runtime
 
 
@@ -96,7 +119,7 @@ def deadline_linear_cost_fn(job: Job, waiting_factor=1):
     return job.arrival + waiting_factor * job.cost + job.runtime
 
 
-# Jobs wait as a function of its surface area (resource * runtime).
-def deadline_linear_area_fn(job: Job, waiting_factor=1):
-    return job.arrival + waiting_factor * job.resources[
-        'GPUs'] * job.runtime + job.runtime
+def deadline_linear_cost_filter_cpu_fn(job: Job, waiting_factor=1):
+    if job.resources['GPUs'] == 0:
+        return -1
+    return job.arrival + waiting_factor * job.cost + job.runtime

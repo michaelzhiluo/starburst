@@ -52,7 +52,7 @@ def plot_trace_spacetime(jobs, num_nodes):
 
 def plot_trace_spacetime_and_spillover(jobs, num_nodes):
     jobs = jobs.copy()
-    NUM_COLORS = len(jobs['idx'])
+    NUM_COLORS = len(jobs['idx']) + 5
     cm = plt.get_cmap('gist_rainbow')
     colors = [cm(1. * i / NUM_COLORS) for i in range(NUM_COLORS)]
     fig, ax = plt.subplots(figsize=(100, 50))
@@ -61,7 +61,7 @@ def plot_trace_spacetime_and_spillover(jobs, num_nodes):
     for j_idx in range(len(jobs['idx'])):
         allocated_gpus = jobs['allocated_gpus'][j_idx]
         if not allocated_gpus:
-            height = 0
+            height = 1
             segment = (jobs['arrival'][j_idx],
                        jobs['arrival'][j_idx] + jobs['runtime'][j_idx], j_idx)
             for k, v in segment_height_list.items():
@@ -74,6 +74,7 @@ def plot_trace_spacetime_and_spillover(jobs, num_nodes):
                     height=jobs['num_gpus'][j_idx],
                     left=segment[0],
                     align='edge',
+                    alpha=0.5,
                     color=colors[jobs['idx'][j_idx]])
         else:
             for node_idx in allocated_gpus.keys():
@@ -86,6 +87,7 @@ def plot_trace_spacetime_and_spillover(jobs, num_nodes):
                             width=jobs['runtime'][j_idx],
                             edgecolor='black',
                             height=1.0,
+                            alpha=0.5,
                             left=jobs['start'][j_idx],
                             align='edge',
                             color=colors[jobs['idx'][j_idx]])
@@ -97,7 +99,7 @@ def plot_trace_spacetime_and_spillover(jobs, num_nodes):
             pass
     max_arrival = max(jobs['arrival'])
     plt.ylim(bottom=1)  #, #top=total_gpus + 1)
-    plt.xlim(right=1.1 * max_arrival)
+    plt.xlim(right=1.4 * max_arrival)
     plt.axvline(x=max_arrival, color='black', linewidth=5)
     plt.tight_layout()
     plt.show()

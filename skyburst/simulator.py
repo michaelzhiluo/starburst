@@ -22,12 +22,19 @@ DEFAULT_SIMULATOR_SPEC = {
     'waiting_policy': 'linear_runtime',
     # Waiting hyperparameter (to be passed to waiting_policy)
     'waiting_factor': 1.25,
+    # Sets clipping time for waiting (max time a job should wait)
+    'clip_time': 1e9,
     # Enable backfill (assumes time estimator).
     'backfill': False,
     # Enable loop scheduling (just loop through entire queue, remove HoL).
     'loop': False,
     # Enable prediction. (Jobs predict if they can be assigned to cluster before timing out).
-    'predict_wait': False,
+    # 0 is no prediction, 1 is perfect oracle
+    'predict_wait': 0,
+    # Queue length
+    'max_queue_length': -1,
+    # Time estimator error
+    'time_estimator_error': 0,
     # (Deprecated) Algorithm to immediately send job to cloud (without waiting).
     'filter_alg': None,
     # Prints out simulator state at every timestep.
@@ -38,6 +45,8 @@ DEFAULT_SIMULATOR_SPEC = {
     'pbar_idx': 0,
     # Jobs to not consider for final metrics at the beg. and end. of simulator.
     'warmup_jobs': 5000,
+    # Whether to get snapshots and save to result dict
+    'snapshot': False,
     # Metadata on job generation (run prior to simulator).
     'jobgen_spec': {
         # Dataset type ['philly', 'philly_gen', 'gen_gpu']
@@ -83,14 +92,17 @@ def run_simulator(
     backfill = simulator_spec['backfill']
     loop = simulator_spec['loop']
     predict_wait = simulator_spec['predict_wait']
+    clip_time = simulator_spec['clip_time']
     filter_alg = simulator_spec['filter_alg']
+    max_queue_length = simulator_spec['max_queue_length']
+    time_estimator_error = simulator_spec['time_estimator_error'] / 100.0
     assert not (
         backfill and loop
     ), f'Must only set one option to be True - backfill:{backfill}, loop:{loop} '
 
     verbose = simulator_spec['verbose']
     debug = simulator_spec['debug']
-
+    snapshot = simulator_spec['snapshot']
     # Initialize simulator variables\
     jobs = copy.deepcopy(jobs)
     queue = []
@@ -108,9 +120,18 @@ def run_simulator(
                 desc="Jobs progress: ",
                 position=simulator_spec['pbar_idx'])
 
+    snapshots = {}
+
+    total_local_wait = 0
+    total_finished_local_jobs = 0
+    total_cloud_jobs = 0
+
+    queue_length = []
+    prev_t = -1
     while len(jobs) > 0 or len(queue) > 0 or cluster.active_jobs:
         # Clear cluster of jobs that have completed
-        finished_jobs.extend(cluster.try_clear(t))
+        completed_jobs = cluster.try_clear(t)
+        finished_jobs.extend(completed_jobs)
 
         # Check for jobs that have waited too long (move to cloud).
         i = 0
@@ -121,11 +142,16 @@ def run_simulator(
                 queue.remove(job)
                 job.state = 'TIMEOUT-CLOUD'
                 # Shortcut: Job can predict it will go to cloud or not, if so, it would have began running at job.arrival.
-                if predict_wait:
+                # Perfect Oracle
+                if predict_wait == 1:
                     job.start = job.arrival
-                else:
+                elif predict_wait == 0 or predict_wait == 2:
                     job.start = job.deadline - job.runtime
+                else:
+                    raise ValueError(
+                        f'Predict wait {predict_wait} wrong value!')
                 cloud_cost += job.cost
+                total_cloud_jobs += 1
                 finished_jobs.append(job)
             else:
                 i += 1
@@ -139,6 +165,7 @@ def run_simulator(
             elif job.arrival == t:
                 jobs.remove(job)
                 deadline = waiting_fn(job)
+                job.set_deadline(deadline)
                 if deadline == -1:
                     job.state = 'TIMEOUT-CLOUD'
                     job.start = job.arrival
@@ -146,9 +173,29 @@ def run_simulator(
                     cloud_cost += job.cost
                     finished_jobs.append(job)
                 else:
-                    job.set_deadline(deadline=deadline)
+                    if time_estimator_error != 0:
+                        original_runtime = job.runtime
+                        mod_runtime = original_runtime + np.random.normal(
+                            loc=0.0,
+                            scale=time_estimator_error * original_runtime)
+                        mod_runtime = max(0, mod_runtime)
+                        if simulator_spec[
+                                'waiting_policy'] == 'linear_cost_filter_cpu':
+                            deadline = job.arrival + simulator_spec[
+                                'waiting_factor'] * (
+                                    job.resources['GPUs'] +
+                                    job.resources['CPUs'] /
+                                    53.0) * mod_runtime + job.runtime
+                    waiting_time = max(0.0,
+                                       deadline - job.runtime - job.arrival)
+                    if waiting_time < 0:
+                        raise ValueError('wtf bbq')
+                    waiting_time = min(clip_time, waiting_time)
+                    job.set_deadline(deadline=job.arrival + job.runtime +
+                                     waiting_time)
+                    queue_length.append(len(queue))
                     queue.append(job)
-                    pbar.update(1)
+                pbar.update(1)
             else:
                 break
 
@@ -189,6 +236,21 @@ def run_simulator(
                         #queue.extend(preempted_jobs)
                     else:
                         i += 1
+
+        if max_queue_length != -1:
+            while len(queue) > max_queue_length:
+                q_job = queue[-1]
+                queue.remove(q_job)
+                q_job.state = 'TIMEOUT-CLOUD'
+                q_job.start = t
+                q_job.set_deadline(deadline=q_job.arrival + q_job.runtime)
+                cloud_cost += q_job.cost
+                finished_jobs.append(q_job)
+
+        if snapshot:
+            if t not in snapshots:
+                snapshots[t] = {}
+            snapshots[t]['new_queue'] = copy.deepcopy(queue)
 
         next_time_list = []
 
@@ -241,6 +303,8 @@ def run_simulator(
         'stats': {}
     }
 
+    if snapshot:
+        result_dict['snapshot'] = snapshots
     # Computing Simulator stats, such as avg. waiting, avg. JCT, cloud cost, utilization.
     total_waiting_time = 0.0
     total_running_time = 0.0
@@ -251,7 +315,7 @@ def run_simulator(
 
     start_time = finished_jobs[simulator_spec['warmup_jobs']].arrival
     end_time = finished_jobs[len(finished_jobs) -
-                             simulator_spec['warmup_jobs']].arrival
+                             simulator_spec['warmup_jobs'] - 1].arrival
 
     for job in finished_jobs:
         inter_start = max(job.start, start_time)
@@ -306,4 +370,6 @@ def run_simulator(
         stats_dict['total_cloud_cost'], stats_dict['avg_cloud_cost'], \
         stats_dict['avg_waiting'], stats_dict['avg_jct'], stats_dict['cluster_utilization'], stats_dict['system_utilization'])]
     print(tabulate(data, headers=headers))
+    # import pdb
+    # pdb.set_trace()
     return result_dict

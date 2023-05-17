@@ -1,6 +1,9 @@
 from skyburst.node import Node
 from skyburst import utils
 
+blocked_by_gpu_cpu_job = 0
+blocked_by_cpu_job = 0
+
 
 class Cluster(object):
     def __init__(self,
@@ -33,6 +36,8 @@ class Cluster(object):
         return self.active_jobs
 
     def try_fit_v2(self, cur_timestamp, job):
+        global blocked_by_cpu_job
+        global blocked_by_gpu_cpu_job
         num_gpus = job.resources['GPUs']
         num_cpus = job.resources['CPUs']
         num_cpus_per_node = num_cpus / job.nodes
@@ -116,15 +121,18 @@ class Cluster(object):
                         job_gpu_demands.remove(gpu_demand)
                         break
                     else:
-                        if job.num_gpus > 0:
-                            temp = True
+                        pass
+                        # if job.num_gpus > 0 and not temp:
+                        #     blocked_by_gpu_cpu_job += 1
+                        #     temp = True
 
         # If there are still demands that cannot be satisifed via free and preempted jobs,
         # it cannot be scheduled on the cluster.
         if job_gpu_demands:
             # if temp:
-            #     print(job)
-            #     print('I got cucked by a CPU job.')
+            #     print(
+            #         f'GPU-CPU block occurrences: {blocked_by_gpu_cpu_job}, CPU block occurrences: {blocked_by_cpu_job}'
+            #     )
             return False, []
 
         # =============================================================================
@@ -147,15 +155,30 @@ class Cluster(object):
 
         return True, []
 
-    # Backfill Scheduling: Reserve blocking job.
-    def try_reserve(self, cur_timestamp, job):
-        max_timestemp = job.deadline - job.runtime
-
-        active_job_list = [a_job for a_job in self.active_jobs.values()]
-        active_job_list.sort(key=lambda x: x.start + x.runtime)
+    def predict_wait(self, cur_timestamp, job, queue, loop=False):
+        max_timestamp = job.deadline - job.runtime
 
         num_gpus = job.num_gpus
-        num_cpus_per_node = job.num_cpus / job.nodes
+
+        def get_gpu_demand_list(cur_job):
+            num_gpus = job.num_gpus
+            if job.nodes == 1:
+                if num_gpus > self.num_gpus_per_node:
+                    # Assume worst case colocation
+                    # Multinode case, i.e. 26 GPUs, 8 GPU/node cluster -> job_gpu_demands = [8,8,8,2]
+                    job_gpu_demands = [self.num_gpus_per_node] * int(
+                        num_gpus / self.num_gpus_per_node)
+                    if num_gpus % self.num_gpus_per_node:
+                        job_gpu_demands.append(num_gpus %
+                                               self.num_gpus_per_node)
+                else:
+                    job_gpu_demands = [num_gpus]
+            else:
+                job_gpu_demands = [int(num_gpus / job.nodes)] * job.nodes
+            return job_gpu_demands
+
+        job_gpu_demands = get_gpu_demand_list(job)
+
         # Generate job GPU demands
         if job.nodes == 1:
             if num_gpus > self.num_gpus_per_node:
@@ -170,22 +193,75 @@ class Cluster(object):
         else:
             job_gpu_demands = [int(num_gpus / job.nodes)] * job.nodes
 
-        node_free_gpu_list = [[] for _ in range(self.num_nodes)]
         node_free_gpu_count = [0] * self.num_nodes
-        node_free_cpus = [0] * self.num_nodes
-        reserved_cpus = [0] * self.num_nodes
-        for r_job_idx, r_job in self.reserved_jobs.items():
-            r_job_cpu_per_node = r_job.num_cpus / r_job.nodes
-            for n_idx, gpu_list in r_job.allocated_gpus.items():
-                reserved_cpus[n_idx] += r_job_cpu_per_node
 
+        for n_idx, node in enumerate(self.nodes):
+            for gpu_idx in range(self.num_gpus_per_node):
+                if node.gpu_dict[gpu_idx]:
+                    continue
+                node_free_gpu_count[n_idx] += 1
+
+        # "Plan" ahead of the queue
+        # for q_job in queue:
+        #     q_job_gpu_demands = get_gpu_demand_list(q_job)
+        #     q_node_index = can_cluster_fit(node_free_gpu_count)
+
+        active_job_list = [a_job for a_job in self.active_jobs.values()]
+        active_job_list.sort(key=lambda x: x.start + x.runtime)
+
+        def can_cluster_fit(free_gpu_count):
+            node_indexes = []
+            for demand_idx, job_gpu_demand in enumerate(job_gpu_demands):
+                for node_idx, free_gpus_node in enumerate(free_gpu_count):
+                    if job_gpu_demand <= free_gpus_node \
+                        and node_idx not in node_indexes:
+                        node_indexes.append(node_idx)
+                    if len(node_indexes) == len(job_gpu_demands):
+                        return node_indexes
+            if len(node_indexes) != len(job_gpu_demands):
+                return []
+            return node_indexes
+
+        if can_cluster_fit(node_free_gpu_count):
+            return True
+
+        for a_job in active_job_list:
+            if a_job.start + a_job.runtime > max_timestamp:
+                return False
+            for n_idx, gpu_list in a_job.allocated_gpus.items():
+                node_free_gpu_count[n_idx] += len(gpu_list)
+
+            if can_cluster_fit(node_free_gpu_count):
+                return True
+        return False
+
+    # Backfill Scheduling: Reserve blocking job.
+    def try_reserve(self, cur_timestamp, job):
+        max_timestemp = job.deadline - job.runtime
+
+        free_gpus = [n.free_gpus for n in self.nodes]
+        active_job_list = [a_job for a_job in self.active_jobs.values()]
+        active_job_list.sort(key=lambda x: x.start + x.runtime)
+
+        num_gpus = job.num_gpus
+        # Generate job GPU demands
+        if num_gpus > self.num_gpus_per_node:
+            # Multinode case, i.e. 26 GPUs, 8 GPU/node cluster -> job_gpu_demands = [8,8,8,2]
+            job_gpu_demands = [self.num_gpus_per_node] * int(
+                num_gpus / self.num_gpus_per_node)
+            if num_gpus % self.num_gpus_per_node:
+                job_gpu_demands.append(num_gpus % self.num_gpus_per_node)
+        else:
+            job_gpu_demands = [num_gpus]
+
+        node_free_list = [[] for _ in range(self.num_nodes)]
+        node_free_count = [0] * self.num_nodes
         for n_idx, node in enumerate(self.nodes):
             for gpu_idx in range(self.num_gpus_per_node):
                 if node.gpu_dict[gpu_idx] or node.reserved_gpus[gpu_idx]:
                     continue
-                node_free_gpu_count[n_idx] += 1
-                node_free_gpu_list[n_idx].append(gpu_idx)
-            node_free_cpus[n_idx] += node.free_cpus
+                node_free_count[n_idx] += 1
+                node_free_list[n_idx].append(gpu_idx)
 
         for a_job in active_job_list:
             if a_job.start + a_job.runtime > job.deadline - job.runtime:
@@ -194,25 +270,13 @@ class Cluster(object):
                 for gpu_idx in gpu_list:
                     if self.nodes[n_idx].reserved_gpus[gpu_idx]:
                         continue
-                    node_free_gpu_list[n_idx].append(gpu_idx)
-                    node_free_gpu_count[n_idx] += 1
-                node_free_cpus[n_idx] += a_job.num_cpus / a_job.nodes
+                    node_free_list[n_idx].append(gpu_idx)
+                    node_free_count[n_idx] += 1
 
-            node_indexes = []
-            for demand_idx, job_gpu_demand in enumerate(job_gpu_demands):
-                for node_idx, free_gpus_node in enumerate(node_free_gpu_count):
-                    if job_gpu_demand == free_gpus_node \
-                        and num_cpus_per_node <= node_free_cpus[node_idx] - reserved_cpus[node_idx]\
-                        and node_idx not in node_indexes:
-                        node_indexes.append(node_idx)
-
-            if len(node_indexes) != len(job_gpu_demands):
-                continue
-
+            node_indexes = utils.is_subset(node_free_count, job_gpu_demands)
             if node_indexes:
                 for idx, n_idx in enumerate(node_indexes):
-                    gpu_list = node_free_gpu_list[n_idx][
-                        -job_gpu_demands[idx]:]
+                    gpu_list = node_free_list[n_idx][-job_gpu_demands[idx]:]
                     job.allocated_gpus[n_idx] = gpu_list
                     cur_node = self.nodes[n_idx]
                     for gpu_idx in gpu_list:
@@ -222,6 +286,82 @@ class Cluster(object):
                 job.start = a_job.start + a_job.runtime
                 return True
         raise ValueError('I should not go here!')
+
+    # Backfill Scheduling: Reserve blocking job.
+    # def try_reserve(self, cur_timestamp, job):
+    #     max_timestemp = job.deadline - job.runtime
+
+    #     active_job_list = [a_job for a_job in self.active_jobs.values()]
+    #     active_job_list.sort(key=lambda x: x.start + x.runtime)
+
+    #     num_gpus = job.num_gpus
+    #     num_cpus_per_node = job.num_cpus / job.nodes
+    #     # Generate job GPU demands
+    #     if job.nodes == 1:
+    #         if num_gpus > self.num_gpus_per_node:
+    #             # Assume worst case colocation
+    #             # Multinode case, i.e. 26 GPUs, 8 GPU/node cluster -> job_gpu_demands = [8,8,8,2]
+    #             job_gpu_demands = [self.num_gpus_per_node] * int(
+    #                 num_gpus / self.num_gpus_per_node)
+    #             if num_gpus % self.num_gpus_per_node:
+    #                 job_gpu_demands.append(num_gpus % self.num_gpus_per_node)
+    #         else:
+    #             job_gpu_demands = [num_gpus]
+    #     else:
+    #         job_gpu_demands = [int(num_gpus / job.nodes)] * job.nodes
+
+    #     node_free_gpu_list = [[] for _ in range(self.num_nodes)]
+    #     node_free_gpu_count = [0] * self.num_nodes
+    #     node_free_cpus = [0] * self.num_nodes
+    #     reserved_cpus = [0] * self.num_nodes
+    #     for r_job_idx, r_job in self.reserved_jobs.items():
+    #         r_job_cpu_per_node = r_job.num_cpus / r_job.nodes
+    #         for n_idx, gpu_list in r_job.allocated_gpus.items():
+    #             reserved_cpus[n_idx] += r_job_cpu_per_node
+
+    #     for n_idx, node in enumerate(self.nodes):
+    #         for gpu_idx in range(self.num_gpus_per_node):
+    #             if node.gpu_dict[gpu_idx] or node.reserved_gpus[gpu_idx]:
+    #                 continue
+    #             node_free_gpu_count[n_idx] += 1
+    #             node_free_gpu_list[n_idx].append(gpu_idx)
+    #         node_free_cpus[n_idx] += node.free_cpus
+
+    #     for a_job in active_job_list:
+    #         if a_job.start + a_job.runtime > job.deadline - job.runtime:
+    #             return False
+    #         for n_idx, gpu_list in a_job.allocated_gpus.items():
+    #             for gpu_idx in gpu_list:
+    #                 if self.nodes[n_idx].reserved_gpus[gpu_idx]:
+    #                     continue
+    #                 node_free_gpu_list[n_idx].append(gpu_idx)
+    #                 node_free_gpu_count[n_idx] += 1
+    #             node_free_cpus[n_idx] += a_job.num_cpus / a_job.nodes
+
+    #         node_indexes = []
+    #         for demand_idx, job_gpu_demand in enumerate(job_gpu_demands):
+    #             for node_idx, free_gpus_node in enumerate(node_free_gpu_count):
+    #                 if job_gpu_demand == free_gpus_node \
+    #                     and num_cpus_per_node <= node_free_cpus[node_idx] - reserved_cpus[node_idx]\
+    #                     and node_idx not in node_indexes:
+    #                     node_indexes.append(node_idx)
+
+    #         if len(node_indexes) != len(job_gpu_demands):
+    #             continue
+
+    #         if node_indexes:
+    #             for idx, n_idx in enumerate(node_indexes):
+    #                 gpu_list = node_free_gpu_list[n_idx][
+    #                     -job_gpu_demands[idx]:]
+    #                 job.allocated_gpus[n_idx] = gpu_list
+    #                 cur_node = self.nodes[n_idx]
+    #                 for gpu_idx in gpu_list:
+    #                     cur_node.reserved_gpus[gpu_idx] = job
+    #             self.reserved_jobs[job.idx] = job
+    #             job.block_job_idx = a_job.idx
+    #             job.start = a_job.start + a_job.runtime
+    #             return True
+    #     raise ValueError('I should not go here!')
 
     def try_clear(self, t: float):
         """Clears cluster of completed jobs at time t.

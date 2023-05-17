@@ -2,13 +2,14 @@ import argparse
 import json
 
 from skyburst import job_gen, run_simulator
+from skyburst import plot
 
 
 def generate_data_run_simulator(run_config):
     proc_jobs = job_gen.load_processed_jobs(
         dataset_config=run_config['jobgen_spec'])
 
-    run_simulator(proc_jobs, run_config)
+    return run_simulator(proc_jobs, run_config)
 
 
 if __name__ == '__main__':
@@ -85,10 +86,19 @@ if __name__ == '__main__':
         '--predict_wait',
         type=int,
         default=0,
-        choices=[0, 1],
+        choices=[0, 1, 2],
         help=
         'Enable prediction. (Jobs predict if they can be assigned to cluster before timing out)'
     )
+    parser.add_argument('--max_queue_length',
+                        type=int,
+                        default=-1,
+                        help='Sets maximum length for queue.')
+
+    parser.add_argument('--time_estimator_error',
+                        type=int,
+                        default=0,
+                        help='Time estimator error')
     parser.add_argument('--seed',
                         type=int,
                         default=2024,
@@ -124,6 +134,8 @@ if __name__ == '__main__':
         'verbose': args.verbose,
         'debug': args.debug,
         'warmup_jobs': args.warmup_jobs,
+        'max_queue_length': args.max_queue_length,
+        'time_estimator_error': args.time_estimator_error,
         'jobgen_spec': {
             'dataset': args.dataset,
             'arrival_rate': args.arrival_rate,
@@ -133,4 +145,4 @@ if __name__ == '__main__':
             'seed': args.seed
         }
     }
-    generate_data_run_simulator(run_config)
+    results = generate_data_run_simulator(run_config)
