@@ -194,17 +194,6 @@ if __name__ == '__main__':
     grid_search_config = utils.convert_to_lists(grid_search_config)
     run_configs = utils.generate_cartesian_product(grid_search_config)
 
-    temp = []
-    print(len(run_configs))
-    for r in run_configs:
-        if r['waiting_policy'].split('-')[0] == 'constant' and r['loop'] == 1:
-            continue
-        temp.append(r)
-    print(len(temp))
-    run_configs = temp
-    import pdb
-    pdb.set_trace()
-
     final_simulator_results = run_grid_search(run_configs)
     if args.log:
         file_path = args.log
