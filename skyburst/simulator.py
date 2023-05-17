@@ -127,7 +127,6 @@ def run_simulator(
     total_cloud_jobs = 0
 
     queue_length = []
-    prev_t = -1
     while len(jobs) > 0 or len(queue) > 0 or cluster.active_jobs:
         # Clear cluster of jobs that have completed
         completed_jobs = cluster.try_clear(t)
@@ -160,13 +159,11 @@ def run_simulator(
         i = 0
         while i < len(jobs):
             job = jobs[i]
-            if job.arrival < t:
-                raise ValueError("Should not have entered here!")
-            elif job.arrival == t:
+            if job.arrival <= t:
                 jobs.remove(job)
                 deadline = waiting_fn(job)
                 job.set_deadline(deadline)
-                if deadline == -1:
+                if deadline == -1 or t > job.deadline:
                     job.state = 'TIMEOUT-CLOUD'
                     job.start = job.arrival
                     job.set_deadline(deadline=job.arrival + job.runtime)
@@ -271,7 +268,8 @@ def run_simulator(
                 f'Simulator cannot go back in time: {t}->{min(next_time_list)}'
             )
 
-        t = min(next_time_list)
+        next_t = min(next_time_list)
+        t += 0.2
 
         if verbose or debug:
             headers = [
