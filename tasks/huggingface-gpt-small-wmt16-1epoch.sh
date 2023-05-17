@@ -2,8 +2,8 @@
 
 # ETA:
 
-# 1 GPU: ?
-# 2 GPU: ?
+# 1 GPU: 10h
+# 2 GPU: 6h30m
 # 4 GPU: 5h30m
 # 8 GPU: 5h30m
 
