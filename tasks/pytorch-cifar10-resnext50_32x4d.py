@@ -79,6 +79,6 @@ def test(epoch):
         print(f'Test epoch: {epoch}, loss: {test_loss/total}, accuracy: {100.*correct/total}')
 
 # Training loop with 100 epochs
-for epoch in range(100):
+for epoch in range(10):
     train(epoch)
     test(epoch)
