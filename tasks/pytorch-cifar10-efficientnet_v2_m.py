@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
-from torchvision.models import vit_b_16
+from torchvision.models import efficientnet_v2_m
 
 # Transformations for the train and test sets
 transform_train = transforms.Compose([
@@ -27,7 +27,7 @@ train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=128, shuffl
 test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=100, shuffle=False, num_workers=2)
 
 # Define the ResNet model
-model = vit_b_16(pretrained=False, num_classes=10)
+model = efficientnet_v2_m(pretrained=False, num_classes=10)
 model = model.cuda()
 # Check if there are multiple GPUs. If yes, then use DataParallel.
 if torch.cuda.device_count() > 1:
