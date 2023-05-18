@@ -1,5 +1,8 @@
 import argparse
-from transformers import GPT2Config, GPT2LMHeadModel
+import multiprocessing
+
+num_cpu = multiprocessing.cpu_count()
+from transformers import BertConfig, BertForMaskedLM, BertTokenizerFast
 from transformers import Trainer, TrainingArguments
 from datasets import load_dataset
 
@@ -8,12 +11,10 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument('--dataset', type=str, default='wmt16')
 
-parser.add_argument('--vocab_size', type=int, default=50257)
-parser.add_argument('--n_positions', type=int, default=1024)
-parser.add_argument('--n_ctx', type=int, default=1024)
-parser.add_argument('--n_embd', type=int, default=768)
-parser.add_argument('--n_layer', type=int, default=12)
-parser.add_argument('--n_head', type=int, default=12)
+parser.add_argument('--vocab_size', type=int, default=30522)
+parser.add_argument('--hidden_size', type=int, default=256)
+parser.add_argument('--num_hidden_layers', type=int, default=4)
+parser.add_argument('--num_attention_heads', type=int, default=4)
 
 parser.add_argument('--output_dir', type=str, default='./results')
 parser.add_argument('--num_train_epochs', type=int, default=3)
@@ -29,23 +30,22 @@ parser.add_argument('--logging_steps', type=int, default=10)
 args = parser.parse_args()
 
 # Define the configuration of GPT-2
-config = GPT2Config(
+config = BertConfig(
   vocab_size=args.vocab_size,
-  n_positions=args.n_positions,
-  n_ctx=args.n_ctx,
-  n_embd=args.n_embd,
-  n_layer=args.n_layer,
-  n_head=args.n_head
+  hidden_size=args.hidden_size,
+  num_hidden_layers=args.num_hidden_layers,
+  num_attention_heads=args.num_attention_heads,
+  intermediate_size=args.hidden_size * 4
 )
 
-# Instantiate a new GPT-2 model
-model = GPT2LMHeadModel(config)
+# Instantiate a new BERT model
+model = BertForMaskedLM(config)
 
 # Datasets:
 # ====================================================
 # name                     train    validation    test
 # ----------------------------------------------------
-# wmt16 (de-en)            29000          1014    1000
+# wmt16 (de-en)          4548885          1014    1000
 # wikitext-103-raw-v1    1801350          3760    4358
 # wikitext-103-v1        1801350          3760    4358
 # wikitext-2-raw-v1        36718          3760    4358
@@ -53,16 +53,26 @@ model = GPT2LMHeadModel(config)
 # ====================================================
 
 
-if args.dataset == 'wmt16':
-  # Load the WMT-16 dataset
-  dataset = load_dataset('wmt16', 'de-en')
-elif args.dataset == 'wikitext-103':
+if args.dataset == 'wikitext-103':
     # Load the WikiText-103 dataset
     dataset = load_dataset('wikitext', 'wikitext-103-raw-v1')
 elif args.dataset == 'wikitext-2':
     # Load the WikiText-2 dataset
     dataset = load_dataset('wikitext', 'wikitext-2-raw-v1')
 
+
+# Load the BERT tokenizer
+tokenizer = BertTokenizerFast.from_pretrained('bert-base-uncased')
+
+
+# Tokenize the dataset
+def tokenize_function(examples):
+    tokenized_input = tokenizer(examples["text"], truncation=True, padding="max_length", max_length=512)
+    tokenized_input["labels"] = tokenized_input["input_ids"].copy()
+    return tokenized_input
+
+
+tokenized_datasets = dataset.map(tokenize_function, batched=True, num_proc=num_cpu, remove_columns=["text"])
 
 # Define the training arguments
 training_args = TrainingArguments(
@@ -77,15 +87,15 @@ training_args = TrainingArguments(
     fp16=True,
     gradient_accumulation_steps=args.gradient_accumulation_steps,
     do_train=True,
-    do_eval=True,
+    # do_eval=True,
 )
 
 # Define the trainer
 trainer = Trainer(
     model=model,
     args=training_args,
-    train_dataset=dataset['train'],
-    eval_dataset=dataset['validation'],
+    train_dataset=tokenized_datasets['train'],
+    # eval_dataset=dataset['validation'],
 )
 
 # Train the model
