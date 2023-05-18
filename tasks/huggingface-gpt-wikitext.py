@@ -56,10 +56,7 @@ model = GPT2LMHeadModel(config)
 # ====================================================
 
 
-if args.dataset == 'wmt16':
-  # Load the WMT-16 dataset
-  dataset = load_dataset('wmt16', 'de-en')
-elif args.dataset == 'wikitext-103':
+if args.dataset == 'wikitext-103':
     # Load the WikiText-103 dataset
     dataset = load_dataset('wikitext', 'wikitext-103-raw-v1')
 elif args.dataset == 'wikitext-2':
