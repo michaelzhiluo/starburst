@@ -19,7 +19,7 @@ parser.add_argument('--n_layer', type=int, default=12)
 parser.add_argument('--n_head', type=int, default=12)
 
 parser.add_argument('--output_dir', type=str, default='./results')
-parser.add_argument('--num_train_epochs', type=int, default=3)
+parser.add_argument('--num_train_epochs', type=int, default=1)
 parser.add_argument('--per_device_train_batch_size', type=int, default=4)
 parser.add_argument('--per_device_eval_batch_size', type=int, default=64)
 parser.add_argument('--warmup_steps', type=int, default=500)
