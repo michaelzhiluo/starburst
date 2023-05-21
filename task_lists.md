@@ -12,6 +12,8 @@ NOTE: GPT-2 model is way bigger than BERT model. So we downside some GPT-2 model
 The following table is the list of GPU jobs.
 If we consider choices of #GPUs (1,2,4,8), then the total amount of jobs is ~80. This can be easily extented by changing the number of epochs, or submitting the same job with a different name.
 
+The running time is a rough estimation with maximum number of GPUs (usually 8) and 1 epoch. For most of the jobs, running time with 1 GPU does not differ too much from 8 GPUs, except large models like BERT small, GPT-2 mini, GPT-2 small, where 8 GPUs would be 2-3x faster than 1 GPU.
+
 | Index | Command Line                                                    | Model                           |    Dataset |   n_epochs |     n_gpus | Type | Running Time |
 |-------|-----------------------------------------------------------------|---------------------------------|------------|------------|------------|------|--------------|
 |     1 | /tasks/pytorch-regression.py                                    | N/A                             |        N/A |          1 |          1 | test |         ~1m  |
