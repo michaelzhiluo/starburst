@@ -9,8 +9,8 @@ With more GPUs, the tasks might be faster if the communication overhead is not t
 
 NOTE: GPT-2 model is way bigger than BERT model. So we downside some GPT-2 models to make them comparable to BERT models (to make sure the running time is not too long).
 
-The following table should the list of GPU jobs.
-If we consider choices of #GPUs (1,2,4,8), then the total amount of jobs is ~80. This can be easily extented by changing the number of epochs.
+The following table is the list of GPU jobs.
+If we consider choices of #GPUs (1,2,4,8), then the total amount of jobs is ~80. This can be easily extented by changing the number of epochs, or submitting the same job with a different name.
 
 | Index | Command Line                                                    | Model                           |    Dataset |   n_epochs |     n_gpus | Type | Running Time |
 |-------|-----------------------------------------------------------------|---------------------------------|------------|------------|------------|------|--------------|
