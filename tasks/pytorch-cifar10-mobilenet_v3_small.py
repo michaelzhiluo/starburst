@@ -1,9 +1,19 @@
+import argparse
+import multiprocessing
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
 from torchvision.models import mobilenet_v3_small
+
+from tqdm import tqdm
+
+cpu_count = multiprocessing.cpu_count()
+device_count = torch.cuda.device_count()
+
+assert device_count > 0, "No CUDA devices found"
 
 # Transformations for the train and test sets
 transform_train = transforms.Compose([
@@ -23,8 +33,8 @@ train_dataset = torchvision.datasets.CIFAR10(root='./data', train=True, download
 test_dataset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
 
 # Create data loaders
-train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=128, shuffle=True, num_workers=2)
-test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=100, shuffle=False, num_workers=2)
+train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=128 * device_count, shuffle=True, num_workers=cpu_count)
+test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=128 * device_count, shuffle=False, num_workers=cpu_count)
 
 # Define the ResNet model
 model = mobilenet_v3_small(pretrained=False, num_classes=10)
@@ -44,7 +54,7 @@ def train(epoch):
     train_loss = 0
     correct = 0
     total = 0
-    for batch_idx, (inputs, targets) in enumerate(train_loader):
+    for batch_idx, (inputs, targets) in enumerate(tqdm(train_loader)):
         inputs, targets = inputs.cuda(), targets.cuda()
         optimizer.zero_grad()
         outputs = model(inputs)
@@ -78,7 +88,13 @@ def test(epoch):
 
         print(f'Test epoch: {epoch}, loss: {test_loss/total}, accuracy: {100.*correct/total}')
 
-# Training loop with 100 epochs
-for epoch in range(10):
-    train(epoch)
-    test(epoch)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--num_train_epochs', type=int, default=1)
+    args = parser.parse_args()
+
+    # Training loop
+    for epoch in range(args.num_train_epochs):
+        train(epoch)
+        test(epoch)
