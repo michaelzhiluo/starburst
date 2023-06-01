@@ -82,8 +82,9 @@ if __name__ == '__main__':
         help='Scheduling algorithm specifying order of the queue.')
     parser.add_argument('--binpack_alg',
                         type=str,
+                        nargs='+',
                         default='first-fit',
-                        choices=['first-fit', 'best-fit'],
+                        choices=['first-fit', 'best-fit', 'worst-fit'],
                         help='Binpacking algorithm for the cluster.')
     parser.add_argument(
         '--waiting_policy',

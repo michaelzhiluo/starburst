@@ -322,13 +322,17 @@ def generate_synthetic_jobs(arrival_rate=8.0,
 
     # Get GPU resources
     proc_jobs = []
+    categorical = [0.7, 0.15, 0.1, 0.05]
+    sizes = [1, 2, 4, 8]
     for idx in range(total_jobs):
-        resources_dict = {'GPUs': 8}
-        cost = resources_dict['GPUs'] * run_times[idx]
+
+        resources_dict = {'GPUs': np.random.choice(sizes, p=categorical)}
+        temp = run_times[idx]
+        cost = resources_dict['GPUs'] * temp
         proc_jobs.append(
             Job(idx,
                 arrival=arrival_times[idx],
-                runtime=run_times[idx],
+                runtime=temp,
                 resources=resources_dict,
                 cost=cost))
     return proc_jobs

@@ -103,6 +103,21 @@ linear_capacity-0.234 \
 --log /home/gcpuser/starburst_logs/evaluation/waiting_policies_gen.log
 
 
+python run_simulator_sweep.py \
+--dataset helios_gen \
+--cpus_per_node 48 \
+--cluster_size 64 \
+--arrival 8 12 16 20 24 25 26 27 28 \
+32 34 36 40 44 48 52 56 60 64 68 72 76 80 84 88 92 \
+--total_jobs 300000 \
+--sched_alg fifo \
+--waiting_policy zero-1 constant-0.454 linear_cost-0.04 linear_runtime-1.25 \
+linear_capacity-0.234 \
+--loop 0 \
+--seed 1994 \
+--log /home/gcpuser/starburst_logs/evaluation/waiting_policies_gen.log
+
+
 # Evaluation: Helios Trace: over waiting policies with and without loop
 # python run_simulator_sweep.py \
 # --dataset helios \
@@ -115,7 +130,6 @@ linear_capacity-0.234 \
 # --loop 0 1 \
 # --seed 1994 \
 # --log /home/gcpuser/starburst_logs/evaluation/policies_loop.log \
-
 python run_simulator_sweep.py \
 --dataset helios_gen \
 --cpus_per_node 48 \
@@ -243,6 +257,8 @@ python run_simulator_sweep.py \
 # run_configs = temp
 # import pdb
 # pdb.set_trace()
+
+
 # With time estimator errors
 # python run_simulator_sweep.py \
 # --dataset helios \
@@ -257,7 +273,6 @@ python run_simulator_sweep.py \
 # --seed 1994 \
 # --max_queue_length 30 \
 # --log /home/gcpuser/starburst_logs/evaluation/time_estimator_error.log
-
 python run_simulator_sweep.py \
 --dataset helios_gen \
 --cpus_per_node 48 \
@@ -276,20 +291,34 @@ python run_simulator_sweep.py \
 
 
 
-# Without and without timeestimator
-# Evaluation: Helios Trace over different waiting policies
-python run_simulator_sweep.py \
---dataset helios \
---cpus_per_node 48 \
---cluster_size 16 20 24 28 32 36 40 44 48 \
-52 56 60 64 68 72 76 80 84 88 92 96 100 \
-104 108 112 116 120 124 132 136 140 144 \
---sched_alg fifo \
---waiting_policy zero-1 linear_cost_filter_cpu-0.04 linear_capacity_filter_cpu-0.234 \
---loop 1 \
---seed 1994 \
---max_queue_length 30 \
---log /home/gcpuser/starburst_logs/evaluation/no_time_estimator.log
+# # Without and without timeestimator
+# # Evaluation: Helios Trace over different waiting policies
+# python run_simulator_sweep.py \
+# --dataset helios \
+# --cpus_per_node 48 \
+# --cluster_size 16 20 24 28 32 36 40 44 48 \
+# 52 56 60 64 68 72 76 80 84 88 92 96 100 \
+# 104 108 112 116 120 124 132 136 140 144 \
+# --sched_alg fifo \
+# --waiting_policy zero-1 linear_cost_filter_cpu-0.04 linear_capacity_filter_cpu-0.234 \
+# --loop 1 \
+# --seed 1994 \
+# --max_queue_length 30 \
+# --log /home/gcpuser/starburst_logs/evaluation/no_time_estimator.log
+
+
+# python run_simulator_sweep.py \
+# --dataset helios \
+# --cpus_per_node 48 \
+# --cluster_size 16 20 24 28 32 36 40 44 48 \
+# 52 56 60 64 68 72 76 80 84 88 92 96 100 \
+# 104 108 112 116 120 124 132 136 140 144 \
+# --sched_alg fifo \
+# --waiting_policy zero-1 linear_cost_filter_cpu-0.04 linear_capacity_filter_cpu-0.234 \
+# --loop 1 \
+# --seed 1994 \
+# --max_queue_length 30 \
+# --log /home/gcpuser/starburst_logs/evaluation/no_time_estimator.log
 
 
 
@@ -302,30 +331,155 @@ python run_simulator_sweep.py \
 32 34 36 40 44 48 52 56 60 64 68 72 76 80 84 88 92 \
 --cv_factor 1 4 8 16 \
 --total_jobs 300000 \
+--loop 1 \
 --max_queue_length 30 \
 --waiting_policy zero-1 linear_cost_filter_cpu-0.076 \
 --seed 1000 \
 --log  /home/gcpuser/starburst_logs/evaluation/burst.log
 
+#==========================================================================================================#
 
 
-# Philly pareto curve
-# With different levels of burstiness
+# temp = []
+# print(len(run_configs))
+# for r in run_configs:
+#     asdf = r['waiting_policy'].split('-')[0]
+#     if asdf == 'constant' and r['loop'] == 0:
+#         temp.append(r)
+#     elif asdf == 'linear_cost' and r['loop'] == 1:
+#         temp.append(r)
+#     elif asdf == 'linear_cost_filter_cpu' and r['loop'] == 1:
+#         temp.append(r)
+# print(len(temp))
+# run_configs = temp
+# import pdb
+# pdb.set_trace()
+# Philly pareto Curve
 python run_simulator_sweep.py \
 --sched_alg fifo \
 --dataset philly_gen \
 --cluster_size 64 \
 --arrival_rate 32 \
---total_jobs 600000 \
+--total_jobs 300000 \
 --waiting_policy constant-0 constant-0.5 constant-1 constant-2 constant-4 constant-5 constant-7 constant-8 constant-16 constant-32  constant-64 constant-128 constant-256 \
 constant-512 constant-1024 constant-2048 \
-linear_cost-0 linear_cost-0.04 linear_cost-0.08 linear_cost-0.12 linear_cost-0.16 linear_cost-0.32 linear_cost-0.64 linear_cost-1.28 \
-linear_cost-2.56 linear_cost-5.12 linear_cost-10.24 linear_cost-20.48  linear_cost-40.96 linear_cost-81.92 linear_cost-163.84 linear_cost-327.68 linear_cost-655.36  \
+linear_cost-0 linear_cost-0.02 linear_cost-0.04 linear_cost-0.06 linear_cost-0.08 linear_cost-0.12 linear_cost-0.16 linear_cost-0.32 linear_cost-0.64 linear_cost-1.28 \
+linear_cost-2.56 linear_cost-5.12 linear_cost-10.24 linear_cost-20.48 linear_cost-40.96 linear_cost-81.92 linear_cost-163.84 linear_cost-327.68 linear_cost-655.36  \
+--loop 0 1 \
 --seed 1337 \
---log  /home/gcpuser/starburst_logs/evaluation/pareto.log
+--log  /home/gcpuser/starburst_logs/evaluation/philly_pareto.log
+
+
+python run_simulator_sweep.py \
+--sched_alg sjf \
+--dataset philly_gen \
+--cluster_size 64 \
+--arrival_rate 32 \
+--total_jobs 300000 \
+--waiting_policy constant-0 constant-0.5 constant-1 constant-2 constant-4 constant-5 constant-7 constant-8 constant-16 constant-32  constant-64 constant-128 constant-256 \
+constant-512 constant-1024 constant-2048 \
+linear_cost-0 linear_cost-0.02 linear_cost-0.04 linear_cost-0.06 linear_cost-0.08 linear_cost-0.12 linear_cost-0.16 linear_cost-0.32 linear_cost-0.64 linear_cost-1.28 \
+linear_cost-2.56 linear_cost-5.12 linear_cost-10.24 linear_cost-20.48 linear_cost-40.96 linear_cost-81.92 linear_cost-163.84 linear_cost-327.68 linear_cost-655.36  \
+--loop 0 1 \
+--seed 1337 \
+--log  /home/gcpuser/starburst_logs/evaluation/philly_pareto_sjf.log
 
 
 
+# Helios Pareto Curve
+python run_simulator_sweep.py \
+--sched_alg fifo \
+--dataset helios_gen \
+--cluster_size 64 \
+--arrival_rate 36 \
+--total_jobs 300000 \
+--waiting_policy constant-0 constant-0.5 constant-1 constant-2 constant-4 constant-5 constant-7 constant-8 constant-16 constant-32  constant-64 constant-128 constant-256 \
+constant-512 constant-1024 constant-2048 \
+linear_cost_filter_cpu-0 linear_cost_filter_cpu-0.02 linear_cost_filter_cpu-0.04 linear_cost_filter_cpu-0.06 linear_cost_filter_cpu-0.08 linear_cost_filter_cpu-0.12 linear_cost_filter_cpu-0.16 linear_cost_filter_cpu-0.32 linear_cost_filter_cpu-0.64 linear_cost_filter_cpu-1.28 \
+linear_cost_filter_cpu-2.56 linear_cost_filter_cpu-5.12 linear_cost_filter_cpu-10.24 linear_cost_filter_cpu-20.48 linear_cost_filter_cpu-40.96 linear_cost_filter_cpu-81.92 linear_cost_filter_cpu-163.84 linear_cost_filter_cpu-327.68 linear_cost_filter_cpu-655.36  \
+--loop 0 1 \
+--seed 1337 \
+--log  /home/gcpuser/starburst_logs/evaluation/helios_pareto.log
+
+
+python run_simulator_sweep.py \
+--sched_alg sjf \
+--dataset helios_gen \
+--cluster_size 64 \
+--arrival_rate 36 \
+--total_jobs 300000 \
+--waiting_policy constant-0 constant-0.5 constant-1 constant-2 constant-4 constant-5 constant-7 constant-8 constant-16 constant-32  constant-64 constant-128 constant-256 \
+constant-512 constant-1024 constant-2048 \
+linear_cost_filter_cpu-0 linear_cost_filter_cpu-0.02 linear_cost_filter_cpu-0.04 linear_cost_filter_cpu-0.06 linear_cost_filter_cpu-0.08 linear_cost_filter_cpu-0.12 linear_cost_filter_cpu-0.16 linear_cost_filter_cpu-0.32 linear_cost_filter_cpu-0.64 linear_cost_filter_cpu-1.28 \
+linear_cost_filter_cpu-2.56 linear_cost_filter_cpu-5.12 linear_cost_filter_cpu-10.24 linear_cost_filter_cpu-20.48 linear_cost_filter_cpu-40.96 linear_cost_filter_cpu-81.92 linear_cost_filter_cpu-163.84 linear_cost_filter_cpu-327.68 linear_cost_filter_cpu-655.36  \
+--loop 0 1 \
+--seed 1337 \
+--log  /home/gcpuser/starburst_logs/evaluation/helios_pareto_sjf.log
+
+
+
+
+# Pareto Different Waiting Policies
+python run_simulator_sweep.py \
+--sched_alg fifo \
+--dataset philly_gen \
+--cluster_size 64 \
+--arrival_rate 32 \
+--total_jobs 300000 \
+--waiting_policy constant-0 constant-0.5 constant-1 constant-2 constant-4 constant-5 constant-7 constant-8 constant-16 constant-32  constant-64 constant-128 constant-256 \
+constant-512 constant-1024 constant-2048 \
+linear_cost-0 linear_cost-0.02 linear_cost-0.04 linear_cost-0.08 linear_cost-0.12 linear_cost-0.16 linear_cost-0.32 linear_cost-0.64 linear_cost-1.28 \
+linear_cost-2.56 linear_cost-5.12 linear_cost-10.24 linear_cost-20.48  linear_cost-40.96 linear_cost-81.92 linear_cost-163.84 linear_cost-327.68 linear_cost-655.36  \
+linear_runtime-0 linear_runtime-1.1 linear_runtime-1.25 linear_runtime-1.5 linear_runtime-2 linear_runtime-4 linear_runtime-8 linear_runtime-16 linear_runtime-32 \
+linear_runtime-64 linear_runtime-128 linear_runtime-256 linear_runtime-512 \
+linear_capacity-0 linear_capacity-0.1 linear_capacity-0.25 linear_capacity-0.5 linear_capacity-1 linear_capacity-2 linear_capacity-4 linear_capacity-8 linear_capacity-16 \
+linear_capacity-32 linear_capacity-64 linear_capacity-128 linear_capacity-256 linear_capacity-512 \
+--loop 1 \
+--seed 1337 \
+--log  /home/gcpuser/starburst_logs/evaluation/pareto_waiting_policies.log
+
+# Pareto Differet Loop
+python run_simulator_sweep.py \
+--sched_alg fifo \
+--dataset philly_gen \
+--cluster_size 64 \
+--arrival_rate 32 \
+--total_jobs 300000 \
+--waiting_policy linear_cost-0 linear_cost-0.04 linear_cost-0.06 linear_cost-0.08 linear_cost-0.1 linear_cost-0.12 linear_cost-0.16 linear_cost-0.32 linear_cost-0.64 linear_cost-1.28 \
+linear_cost-2.56 linear_cost-5.12 linear_cost-10.24 linear_cost-20.48  linear_cost-40.96 linear_cost-81.92 linear_cost-163.84 linear_cost-327.68 linear_cost-655.36  \
+--loop 0 1 \
+--seed 1337 \
+--log  /home/gcpuser/starburst_logs/evaluation/pareto_loop.log
+
+
+# Scheduling Algorithm Pareto Curve
+python run_simulator_sweep.py \
+--sched_alg fifo sjf edf \
+--dataset philly_gen \
+--cluster_size 64 \
+--arrival_rate 32 \
+--total_jobs 300000 \
+--waiting_policy linear_cost-0 linear_cost-0.02 linear_cost-0.04 linear_cost-0.08 linear_cost-0.12 linear_cost-0.16 linear_cost-0.32 linear_cost-0.64 linear_cost-1.28 \
+linear_cost-2.56 linear_cost-5.12 linear_cost-10.24 linear_cost-20.48  linear_cost-40.96 linear_cost-81.92 linear_cost-163.84 linear_cost-327.68 \
+--loop 1 \
+--seed 1337 \
+--log /home/gcpuser/starburst_logs/evaluation/sched_alg_pareto.log
+
+
+
+# Bin-packing Algorithm Pareto Curve
+python run_simulator_sweep.py \
+--sched_alg fifo \
+--binpack_alg first-fit best-fit worst-fit \
+--dataset philly_gen \
+--cluster_size 64 \
+--arrival_rate 32 \
+--total_jobs 300000 \
+--waiting_policy linear_cost-0 linear_cost-0.02 linear_cost-0.04 linear_cost-0.08 linear_cost-0.12 linear_cost-0.16 linear_cost-0.32 linear_cost-0.64 linear_cost-1.28 \
+linear_cost-2.56 linear_cost-5.12 linear_cost-10.24 linear_cost-20.48  linear_cost-40.96 linear_cost-81.92 linear_cost-163.84 linear_cost-327.68 \
+--loop 1 \
+--seed 1337 \
+--log /home/gcpuser/starburst_logs/evaluation/binpack_pareto.log
 
 
 # Pareto Curve
