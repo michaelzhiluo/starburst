@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
-from torchvision.models import mobilenet_v3_small
+from torchvision.models import vgg11_bn
 
 from tqdm import tqdm
 
@@ -37,7 +37,7 @@ train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=128 * devic
 test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=128 * device_count, shuffle=False, num_workers=cpu_count)
 
 # Define the ResNet model
-model = mobilenet_v3_small(pretrained=False, num_classes=10)
+model = vgg11_bn(pretrained=False, num_classes=10)
 model = model.cuda()
 # Check if there are multiple GPUs. If yes, then use DataParallel.
 if torch.cuda.device_count() > 1:
