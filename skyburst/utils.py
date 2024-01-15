@@ -7,9 +7,9 @@ import pandas as pd
 
 def generate_sorting_function(sched_alg: str):
     if sched_alg == 'fifo':
-        sort_func = lambda x: x.arrival
+        sort_func = lambda x: x.arrival if not x.preempt_cloud else x.new_arrival
     elif sched_alg == 'lifo':
-        sort_func = lambda x: -x.arrival
+        sort_func = lambda x: -x.arrival if not x.preempt_cloud else x.new_arrival
     elif sched_alg == 'edf':
         sort_func = lambda x: x.deadline
     elif sched_alg == 'evdf':

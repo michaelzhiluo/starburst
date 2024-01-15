@@ -57,8 +57,9 @@ def deadline_constant_fn(job: Job, waiting_factor=1):
 
 
 # Linear Waiting policy, all jobs wait as a linear function of their runtimes.
-def deadline_linear_runtime_fn(job: Job, waiting_factor=1.25):
-    waiting_time = (waiting_factor - 1) * job.runtime
+def deadline_linear_runtime_fn(job: Job, waiting_factor=0.25):
+    #waiting_time = (waiting_factor - 1) * job.runtime
+    waiting_time = waiting_factor * job.runtime
     # waiting_time = max(1 / 12.0, waiting_time)
     return job.arrival + waiting_time + job.runtime
 

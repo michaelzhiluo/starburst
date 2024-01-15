@@ -102,6 +102,7 @@ class Cluster(object):
             # Sort by nodes with the most free GPU(s). Don't use, very bad.
             node_free_count.sort(key=lambda x: x[1], reverse=True)
         elif self.binpack == 'tetris':
+            # Sort nodes by the most free in terms of "normalized" dot product of free node resources and job resources (multi resource setting).
             pass
         else:
             raise ValueError(f'Invalid allocation strategy {self.binpack}!')

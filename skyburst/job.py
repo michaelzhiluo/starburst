@@ -8,6 +8,7 @@ class Job(object):
                  cost: float = 0.0,
                  nodes: int = 1):
         self.idx = idx
+        # Original arrival time for job.
         self.arrival = arrival
         self.runtime = runtime
         self.deadline = deadline
@@ -41,6 +42,12 @@ class Job(object):
         # This field keeps track of the total starved space a job has incurred due to preemption.
         # This is to prevent chain preemptions.
         self.starved_space = 0
+
+
+        # This field keeps track if the job has been on the cloud before and was preemepted from running on cloud.
+        self.preempt_cloud = False
+        # New arrival time for job.
+        self.new_arrival = -1
 
     def __eq__(self, other):
         return self.idx == other.idx

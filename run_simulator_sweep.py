@@ -7,6 +7,7 @@ import os
 
 from skyburst import job_gen, run_simulator
 from skyburst import utils
+from skyburst.filter_config import apply_filter_config
 
 
 def generate_data_run_simulator(run_config):
@@ -15,7 +16,7 @@ def generate_data_run_simulator(run_config):
     return run_simulator(proc_jobs, run_config)
 
 
-def run_grid_search(run_configs, num_procs=63):
+def run_grid_search(run_configs, num_procs=40):
     for i, r in enumerate(run_configs):
         r['pbar_idx'] = i
     run_configs = [[r] for r in run_configs]
@@ -130,6 +131,24 @@ if __name__ == '__main__':
                         default=-1,
                         nargs='+',
                         help='Sets maximum length for queue.')
+
+    parser.add_argument(
+        '--long_job_thres',
+        type=float,
+        nargs='+',
+        default=-1,
+        help='Long job threshold (if lower than threshold move to cloud).')
+    parser.add_argument('--preempt_cloud_ratio',
+                        type=float,
+                        nargs='+',
+                        default=-1,
+                        help='Cloud preemption threshold.')
+    parser.add_argument('--data_gravity',
+                        type=float,
+                        nargs='+',
+                        default=-1,
+                        help='Data gravity delay for running in the cloud.')
+
     parser.add_argument('--seed',
                         type=int,
                         default=2024,
@@ -147,6 +166,11 @@ if __name__ == '__main__':
         help=
         'Jobs to not consider for final metrics at the beg. and end. of simulator'
     )
+    parser.add_argument(
+        '--filter_name',
+        type=str,
+        default=None,
+        help='Specifies filter config.')
     parser.add_argument(
         '--log',
         type=str,
@@ -176,6 +200,9 @@ if __name__ == '__main__':
         'loop': args.loop,
         'clip_time': args.clip_time,
         'predict_wait': args.predict_wait,
+        'long_job_thres': args.long_job_thres,
+        'preempt_cloud_ratio': args.preempt_cloud_ratio,
+        'data_gravity': args.data_gravity,
         # Simulator config
         'verbose': args.verbose,
         'debug': args.debug,
@@ -194,15 +221,17 @@ if __name__ == '__main__':
     }
     grid_search_config = utils.convert_to_lists(grid_search_config)
     run_configs = utils.generate_cartesian_product(grid_search_config)
+    run_configs = apply_filter_config(args.filter_name, run_configs)
 
     final_simulator_results = run_grid_search(run_configs)
     if args.log:
         file_path = args.log
     else:
-        file_path = f'/home/gcpuser/sim_logs/{args.dataset}/vary_cv_{args.seed}.log'
-    absolute_file_path = os.path.abspath(file_path)
-    dir_path = os.path.dirname(absolute_file_path)
-    os.system(f'mkdir -p {dir_path}')
-    file = open(absolute_file_path, 'wb')
-    pickle.dump(final_simulator_results, file)
-    file.close()
+        file_path = None
+    if args.log:
+        absolute_file_path = os.path.abspath(file_path)
+        dir_path = os.path.dirname(absolute_file_path)
+        os.system(f'mkdir -p {dir_path}')
+        file = open(absolute_file_path, 'wb')
+        pickle.dump(final_simulator_results, file)
+        file.close()

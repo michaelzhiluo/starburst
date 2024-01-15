@@ -1,4 +1,4 @@
-# Section 3
+# Section 2
 # Background figure
 python run_simulator_sweep.py \
 --sched_alg fifo \
@@ -15,7 +15,7 @@ linear_cost-0.076 \
 --log /home/gcpuser/starburst_logs/background/results.log
 
 
-# For Section 3.2
+# Section 3
 python run_simulator_sweep.py \
 --sched_alg fifo \
 --dataset philly_gen \
@@ -25,6 +25,17 @@ python run_simulator_sweep.py \
 --waiting_policy zero-1 constant-1 constant-2 constant-4 constant-8 \
 --seed 1001 \
 --log /home/gcpuser/starburst_logs/motivation/constant_ablate.log \
+
+# For rebuttal
+python run_simulator_sweep.py \
+--sched_alg fifo \
+--dataset philly_gen \
+--arrival 8 12 16 20 24 26 28 \
+32 34 36 40 44 48 52 56 60 64 68 72 76 80 84 88 92 \
+--total_jobs 450000 \
+--waiting_policy zero-0 constant-1 constant-2 constant-4 constant-8 \
+--seed 1001 \
+--log /home/gcpuser/rebuttal_logs/motivation/constant_ablate.log \
 
 
 # For Section 3.2 Plotting areas of cluster underutilization. (Snapshot)
@@ -136,6 +147,7 @@ python run_simulator_sweep.py \
 --cluster_size 64 \
 --arrival 8 12 16 20 24 25 26 27 28 \
 32 34 36 40 44 48 52 56 60 64 68 72 76 80 84 88 92 \
+96 100 104 108 112 116 \
 --total_jobs 300000 \
 --sched_alg fifo \
 --waiting_policy zero-1 constant-0.454 linear_cost_filter_cpu-0.04 \
@@ -170,9 +182,10 @@ python run_simulator_sweep.py \
 --max_queue_length 10 1000000 \
 --loop 1 \
 --seed 1994 \
---log /home/gcpuser/starburst_logs/evaluation/jct.log \
+--log /home/gcpuser/rebuttal_logs/evaluation/jct.log
 
 
+# Section 6.3 Simulator Evaluation
 
 # temp = []
 # print(len(run_configs))
@@ -206,9 +219,72 @@ python run_simulator_sweep.py \
 --log /home/gcpuser/starburst_logs/evaluation/helios.log
 
 
+# temp = []
+# print(len(run_configs))
+# for r in run_configs:
+#     print(r['waiting_policy'])
+#     if r['waiting_policy'] == 'zero-1':
+#         if r['loop'] == 0 and r['max_queue_length'] == 1000000:
+#             temp.append(r)
+#     elif r['waiting_policy'] == 'constant-0.454':
+#         if r['loop'] == 0 and r['max_queue_length'] == 1000000:
+#             temp.append(r)
+#     elif r['waiting_policy'] == 'linear_cost_filter_cpu-0.04' and r['long_job_thres']==-1:
+#         if r['loop'] == 1 and r['max_queue_length'] == 10:
+#             temp.append(r)
+# print(len(temp))
+# run_configs = temp
+# import pdb
+# pdb.set_trace()
+# Evaluation: Helios Trace End2End Rebuttal - Eurosys.
+python run_simulator_sweep.py \
+--dataset helios \
+--cluster_size 16 20 24 28 32 36 40 44 48 \
+52 56 60 64 68 72 76 80 84 88 92 96 100 \
+104 108 112 116 120 124 132 136 140 144 \
+--cpus_per_node 48 \
+--sched_alg fifo \
+--waiting_policy zero-1 constant-0.454 linear_cost_filter_cpu-0.04 \
+--max_queue_length 10 1000000 \
+--long_job_thres -1 0.25 \
+--loop 0 1 \
+--seed 1994 \
+--log /home/gcpuser/rebuttal_logs/evaluation/helios.log
 
 
+# temp = []
+# print(len(run_configs))
+# for r in run_configs:
+#     print(r['waiting_policy'])
+#     if r['waiting_policy'] == 'zero-1':
+#         if r['loop'] == 0 and r['max_queue_length'] == 1000000:
+#             temp.append(r)
+#     elif r['waiting_policy'] == 'constant-0.454':
+#         if r['loop'] == 0 and r['max_queue_length'] == 1000000:
+#             temp.append(r)
+#     elif r['waiting_policy'] in ['linear_cost_filter_cpu-0.04', 'linear_capacity_filter_cpu-0.234'] and r['long_job_thres']==-1:
+#         if r['loop'] == 1 and r['max_queue_length'] == 10:
+#             temp.append(r)
+# print(len(temp))
+# run_configs = temp
+# import pdb
+# pdb.set_trace()
+# Evaluation: Helios Trace End2End Rebuttal - NSDI.
+python run_simulator_sweep.py \
+--dataset helios \
+--cluster_size 16 20 24 28 32 36 40 44 48 \
+52 56 60 64 68 72 76 80 84 88 92 96 100 \
+104 108 112 116 120 124 132 136 140 144 \
+--cpus_per_node 48 \
+--sched_alg fifo \
+--waiting_policy zero-1 constant-0.454 linear_cost_filter_cpu-0.04  linear_capacity_filter_cpu-0.234 \
+--max_queue_length 10 1000000 \
+--long_job_thres -1 0.25 \
+--loop 0 1 \
+--seed 1994 \
+--log /home/gcpuser/rebuttal1_logs/evaluation/helios.log
 
+#  linear_capacity_filter_cpu-0.234
 
 # temp = []
 # print(len(run_configs))
@@ -239,6 +315,71 @@ python run_simulator_sweep.py \
 --loop 0 1 \
 --seed 1994 \
 --log /home/gcpuser/starburst_logs/evaluation/philly.log
+
+
+
+# temp = []
+# print(len(run_configs))
+# for r in run_configs:
+#     print(r['waiting_policy'])
+#     if r['waiting_policy'] == 'zero-1':
+#         if r['loop'] == 0 and r['max_queue_length'] == 1000000:
+#             temp.append(r)
+#     elif r['waiting_policy'] == 'constant-1':
+#         if r['loop'] == 0 and r['max_queue_length'] == 1000000:
+#             temp.append(r)
+#     elif r['waiting_policy'] == 'linear_cost-0.076' and r['long_job_thres']==-1:
+#         if r['loop'] == 1 and r['max_queue_length'] == 30:
+#             temp.append(r)
+# print(len(temp))
+# run_configs = temp
+# import pdb
+# pdb.set_trace()
+# Evaluation: Philly Trace End2End Rebuttal for Eurosys.
+python run_simulator_sweep.py \
+--dataset philly \
+--cluster_size 16 20 24 28 32 36 40 44 48 \
+52 56 60 64 68 72 76 80 84 88 92 96 100 \
+104 108 112 116 120 124 132 136 140 144 \
+--sched_alg fifo \
+--waiting_policy zero-1 constant-1 linear_cost-0.076 \
+--max_queue_length 30 1000000 \
+--long_job_thres -1 0.25 \
+--loop 0 1 \
+--seed 1994 \
+--log /home/gcpuser/rebuttal_logs/evaluation/philly.log
+
+
+# temp = []
+# print(len(run_configs))
+# for r in run_configs:
+#     print(r['waiting_policy'])
+#     if r['waiting_policy'] == 'zero-1':
+#         if r['loop'] == 0 and r['max_queue_length'] == 1000000:
+#             temp.append(r)
+#     elif r['waiting_policy'] == 'constant-1':
+#         if r['loop'] == 0 and r['max_queue_length'] == 1000000:
+#             temp.append(r)
+#     elif r['waiting_policy'] in ['linear_cost-0.076', 'linear_capacity-0.77']  and r['long_job_thres']==-1:
+#         if r['loop'] == 1 and r['max_queue_length'] == 30:
+#             temp.append(r)
+# print(len(temp))
+# run_configs = temp
+# import pdb
+# pdb.set_trace()
+# Evaluation: Philly Trace End2End Rebuttal for NSDI.
+python run_simulator_sweep.py \
+--dataset philly \
+--cluster_size 16 20 24 28 32 36 40 44 48 \
+52 56 60 64 68 72 76 80 84 88 92 96 100 \
+104 108 112 116 120 124 132 136 140 144 \
+--sched_alg fifo \
+--waiting_policy zero-1 constant-1 linear_cost-0.076 linear_capacity-0.77 \
+--max_queue_length 30 1000000 \
+--long_job_thres -1 0.25 \
+--loop 0 1 \
+--seed 1994 \
+--log /home/gcpuser/rebuttal1_logs/evaluation/philly_test.log
 
 
 
@@ -370,6 +511,37 @@ linear_cost-2.56 linear_cost-5.12 linear_cost-10.24 linear_cost-20.48 linear_cos
 --log  /home/gcpuser/starburst_logs/evaluation/philly_pareto.log
 
 
+# temp = []
+# print(len(run_configs))
+# for r in run_configs:
+#     asdf = r['waiting_policy'].split('-')[0]
+#     if asdf == 'constant' and r['loop'] == 0:
+#         temp.append(r)
+#     elif asdf == 'linear_cost' and r['loop'] == 1 and r['long_job_thres']==-1:
+#         temp.append(r)
+#     elif asdf == 'linear_cost_filter_cpu' and r['loop'] == 1 and r['long_job_thres']==-1:
+#         temp.append(r)
+# print(len(temp))
+# run_configs = temp
+# import pdb
+# pdb.set_trace()
+# Philly pareto Curve for Rebuttal
+python run_simulator_sweep.py \
+--sched_alg fifo \
+--dataset philly_gen \
+--cluster_size 64 \
+--arrival_rate 32 \
+--total_jobs 300000 \
+--waiting_policy constant-0 constant-0.5 constant-1 constant-2 constant-4 constant-5 constant-7 constant-8 constant-16 constant-32  constant-64 constant-128 constant-256 \
+constant-512 constant-1024 constant-2048 constant-4096 constant-8192 constant-16384 constant-32768 constant-65536 \
+linear_cost-0 linear_cost-0.02 linear_cost-0.04 linear_cost-0.06 linear_cost-0.08 linear_cost-0.12 linear_cost-0.16 linear_cost-0.32 linear_cost-0.64 linear_cost-1.28 \
+linear_cost-2.56 linear_cost-5.12 linear_cost-10.24 linear_cost-20.48 linear_cost-40.96 linear_cost-81.92 linear_cost-163.84 linear_cost-327.68 linear_cost-655.36  \
+--long_job_thres -1 0.25 \
+--loop 0 1 \
+--seed 1337 \
+--log  /home/gcpuser/rebuttal_logs/evaluation/philly_pareto.log
+
+
 python run_simulator_sweep.py \
 --sched_alg sjf \
 --dataset philly_gen \
@@ -400,6 +572,23 @@ linear_cost_filter_cpu-2.56 linear_cost_filter_cpu-5.12 linear_cost_filter_cpu-1
 --loop 0 1 \
 --seed 1337 \
 --log  /home/gcpuser/starburst_logs/evaluation/helios_pareto.log
+
+# Helios Pareto Curve for Rebuttal
+python run_simulator_sweep.py \
+--sched_alg fifo \
+--dataset helios_gen \
+--cluster_size 64 \
+--arrival_rate 36 \
+--total_jobs 300000 \
+--waiting_policy constant-0 constant-0.5 constant-1 constant-2 constant-4 constant-5 constant-7 constant-8 constant-16 constant-32  constant-64 constant-128 constant-256 \
+constant-512 constant-1024 constant-2048 constant-20 \
+linear_cost_filter_cpu-0 linear_cost_filter_cpu-0.02 linear_cost_filter_cpu-0.04 linear_cost_filter_cpu-0.06 linear_cost_filter_cpu-0.08 linear_cost_filter_cpu-0.12 linear_cost_filter_cpu-0.16 linear_cost_filter_cpu-0.32 linear_cost_filter_cpu-0.64 linear_cost_filter_cpu-1.28 \
+linear_cost_filter_cpu-2.56 linear_cost_filter_cpu-5.12 linear_cost_filter_cpu-10.24 linear_cost_filter_cpu-20.48 linear_cost_filter_cpu-40.96 linear_cost_filter_cpu-81.92 linear_cost_filter_cpu-163.84 linear_cost_filter_cpu-327.68 linear_cost_filter_cpu-655.36  \
+--loop 0 1 \
+--long_job_thres -1 0.25 \
+--seed 1337 \
+--log  /home/gcpuser/rebuttal_logs/evaluation/helios_pareto.log
+
 
 
 python run_simulator_sweep.py \
@@ -493,3 +682,86 @@ linear_cost-2.56 linear_cost-5.12 linear_cost-10.24 linear_cost-20.48  linear_co
 # linear_runtime-1 linear_runtime-1.1 linear_runtime-1.25 linear_runtime-1.5 linear_runtime-2 linear_runtime-3 linear_runtime-5 linear_runtime-9 \
 # --seed 1001 \
 # --log  /home/gcpuser/starburst_logs/synthetic/runs.log
+
+
+
+# Pareto Different Waiting Budgets
+python run_simulator_sweep.py \
+--sched_alg fifo \
+--dataset helios_gen \
+--cluster_size 64 \
+--arrival_rate 36 \
+--total_jobs 300000 \
+--waiting_policy constant-0 constant-0.2 constant-0.4 constant-0.8 constant-1.6 constant-3.2 constant-6.4 constant-12.8 constant-25.6 constant-51.2 constant-102.4  constant-128 constant-256 \
+constant-512 constant-1024 constant-2048 \
+linear_cost_filter_cpu-0 linear_cost_filter_cpu-0.02 linear_cost_filter_cpu-0.04 linear_cost_filter_cpu-0.06 linear_cost_filter_cpu-0.08 linear_cost_filter_cpu-0.12 linear_cost_filter_cpu-0.16 linear_cost_filter_cpu-0.32 linear_cost_filter_cpu-0.64 linear_cost_filter_cpu-1.28 \
+linear_cost_filter_cpu-2.56 linear_cost_filter_cpu-5.12 linear_cost_filter_cpu-10.24 linear_cost_filter_cpu-20.48 linear_cost_filter_cpu-40.96 linear_cost_filter_cpu-81.92 linear_cost_filter_cpu-163.84 linear_cost_filter_cpu-327.68 linear_cost_filter_cpu-655.36  \
+--loop 1 \
+--seed 1337 \
+--log /home/gcpuser/rebuttal_logs/evaluation/helios_waiting_budget.log
+
+
+
+# temp = []
+# print(len(run_configs))
+# for r in run_configs:
+#     asdf = r['waiting_policy'].split('-')[0]
+#     if asdf == 'constant' and r['loop'] == 1:
+#         temp.append(r)
+#     elif asdf == 'linear_cost' and r['loop'] == 1:
+#         temp.append(r)
+#     elif asdf == 'linear_cost_filter_cpu' and r['loop'] == 1:
+#         temp.append(r)
+# print(len(temp))
+# run_configs = temp
+# import pdb
+# pdb.set_trace()
+# Philly pareto Curve
+python run_simulator_sweep.py \
+--sched_alg fifo \
+--dataset philly_gen \
+--cluster_size 64 \
+--arrival_rate 32 \
+--total_jobs 300000 \
+--waiting_policy constant-0 constant-0.4 constant-1 constant-2 constant-4 constant-8 constant-16 constant-32  constant-64 constant-128 constant-256 \
+constant-512 constant-1024 constant-2048 \
+linear_cost-0 linear_cost-0.02 linear_cost-0.04 linear_cost-0.06 linear_cost-0.08 linear_cost-0.12 linear_cost-0.16 linear_cost-0.32 linear_cost-0.64 linear_cost-1.28 \
+linear_cost-2.56 linear_cost-5.12 linear_cost-10.24 linear_cost-20.48 linear_cost-40.96 linear_cost-81.92 linear_cost-163.84 linear_cost-327.68 linear_cost-655.36  \
+--loop 1 \
+--seed 1337 \
+--log  /home/gcpuser/rebuttal_logs/evaluation/philly_waiting_budget.log
+
+# 0.4 - 10%, 1 - 25%, 2 - 50%, 4 - 100%, 8 - 200%
+# 0.04 - 10%, 0.08 - 25%, 0.16 - 50%, 0.32 - 100%, 0.64 - 200%
+
+
+
+# 90th 99th percentile waiting for Starburst vs base Constant-Wait (no loop and with short jobs)
+
+# temp = []
+# print(len(run_configs))
+# for r in run_configs:
+#     if r['waiting_policy'] == 'zero-1':
+#         if r['loop'] == 0 and r['max_queue_length'] == 1000000:
+#     elif r['waiting_policy'] == 'constant-0.454':
+#         if r['loop'] == 0 and r['max_queue_length'] == 1000000:
+#             temp.append(r)
+#     elif r['waiting_policy'] == 'linear_cost_filter_cpu-0.04':
+#         if r['loop'] == 1 and r['max_queue_length'] == 10:
+#             temp.append(r)
+# print(len(temp))
+# run_configs = temp
+# import pdb
+# pdb.set_trace()
+python run_simulator_sweep.py \
+--dataset helios \
+--cluster_size 16 20 24 28 32 36 40 44 48 \
+52 56 60 64 68 72 76 80 84 88 92 96 100 \
+104 108 112 116 120 124 132 136 140 144 \
+--cpus_per_node 48 \
+--sched_alg fifo \
+--waiting_policy zero-1 constant-0.454 linear_cost_filter_cpu-0.04 \
+--max_queue_length 10 1000000 \
+--loop 0 1 \
+--seed 1994 \
+--log /home/gcpuser/rebuttal_logs/evaluation/helios_percentile.log
