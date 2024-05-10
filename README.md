@@ -158,7 +158,7 @@ See `skyburst/notebooks/tab4_optimal_solver.ipynb` to run the MILP and evaluate 
 
 We also plot Gantt charts to show which jobs run on cluster and on cloud. An example is provided below, with captions to correctly interpret the Gantt chart:
 
-<img src="gantt.svg" width=50% height=50%>
+<img src="gantt.svg" width=80% height=80%>
 
 
 
