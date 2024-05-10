@@ -154,9 +154,11 @@ It involved:
 - Retrieving and setting up Gurobi license, which is provided to artifact evaluators
 
 
-See `skyburst/notebooks/optimal_solver.ipynb` to run the MILP and evaluate it against Starburst and other baselines. Our experiments run the MILP for 8 hours, but we set it at 2 hours for the artifact evaluators.
+See `skyburst/notebooks/tab4_optimal_solver.ipynb` to run the MILP and evaluate it against Starburst and other baselines. Our experiments run the MILP for 8 hours, but we set it at 2 hours for the artifact evaluators.
 
-We also plot Gantt charts to show which jobs run on cluster and on cloud. Example provided below, with captions:
+We also plot Gantt charts to show which jobs run on cluster and on cloud. An example is provided below, with captions to correctly interpret the Gantt chart:
+
+<img src="gantt.svg" width=50% height=50%>
 
 
 
