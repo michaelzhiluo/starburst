@@ -161,8 +161,6 @@ We also plot Gantt charts to show which jobs run on cluster and on cloud. An exa
 <img src="gantt.svg" width=80% height=80%>
 
 
-
-
 ## Fig 14: Starburst w.r.t Bursty Workloads
 
 To run ablations over bursty workloads (Starburst w.r.t different Coefficient of Variances for a Gamma arrival distribution), run:
