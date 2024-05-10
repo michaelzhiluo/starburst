@@ -12,12 +12,54 @@ This guide is designed you to set up, run experiments, and replicate evaluation 
 
 # Setup
 
+We provide several options for the evaluator to install Starburst.
+
+## 1. Python Setup
+
+Our codebase requires Python >= 3.9. To install dependencies for Starburst, run:
+```
+pip install -r requirements.txt
+```
+
+Install the Philly and Helios traces with the follwoing code below:
+```
+cd ~/
+git lfs clone https://github.com/msr-fiddle/philly-traces.git
+cd philly-traces
+tar -xvf trace-data.tar.gz 
+
+cd ~/
+git lfs clone https://github.com/S-Lab-System-Group/HeliosData
+cd HeliosData
+unzip data.zip
+```
+
+One of our experiments uses Gurobi to solve a mixed integeger linear program (MILP). As Gurobi is more difficult to setup (and the user may opt to SSH to our machine instead), we defer setup for Gurobi in the Simulator Experiment (Table 4) section.
+
+## 2. SSH to VM
+
+We also provide our private key for evaluators to run experiments in our VM, which already has everything setup! The VM contains the repositories for both simulator, real-world system, Gurobi, and the Philly/Helios traces.
+
+For best expereince, we recommend linking VSCode remote explorer with the SSH'ed VM by modifying the SSH config file `~/.ssh/config`:
+
+```
+Host starburst
+  HostName 34.121.144.68
+  User gcpuser
+  IdentityFile [PATH_TO_PRIVATE_KEY]
+  IdentitiesOnly yes
+  ForwardAgent yes
+  StrictHostKeyChecking no
+  UserKnownHostsFile=/dev/null
+  GlobalKnownHostsFile=/dev/null
+  Port 22
+```
 
 # Simulation Experiments
 
-We note that all our simulators logs for all our experiments (including Appendix) are saved in a public Google Cloud Storage bucket: `gs://starburst_bucket/logs`. If the user wants to save time, all our results can be directly fetched from this bucket and directly plotted with the Jupyter notebooks provided in `skyburst/plots`. 
+We note that all our simulators logs for all our experiments (including Appendix) are saved in a public Google Cloud Storage bucket: `gs://starburst_bucket/logs`. If the user wants to save time, all our results can be directly fetched from this bucket and directly plotted with the Jupyter notebooks provided in `skyburst/notebooks`. 
 
-To do so, install Gcloud and run the following command:
+To do so, install Gcloud on your machine and run the following command to pull the logs from the bucket:
 ```
 # Will download the logs to ~/log
 gsutil -m cp -r gs://starburst_bucket/logs ~/
@@ -101,7 +143,9 @@ Use `skyburst/notebooks/fig13_ablate_waiting_budget.ipynb` to plot the graphs wi
 
 ## Table 4: MILP Experiments
 
-Our MILP experiments requires access to GUROBI, a popular mathematical optimization solver. However, Gurobi requires a key.
+Our MILP experiments requires access to GUROBI, a popular mathematical optimization solver. However, Gurobi requires a license. We provide our license to the artifact evaluators in `gurobi.lic`.
+
+See `skyburst/notebooks/optimal_solver.ipynb` to run the MILP and evaluate it against Starburst and other baselines.
 
 ## Fig 14: Starburst w.r.t Bursty Workloads
 
@@ -125,4 +169,7 @@ Use `skyburst/notebooks/fig15_ablate_queue_binpack.ipynb` to plot the graphs wit
 
 
 # Real System Experiments
+
+We note that our experiments evaluate over a 4 node, 8 V100/node cluster, which was provisoined as a GKE cluster on Google Cloud, with Skypilot for cloud jobs. This incurred $40K cloud costs during the development of Starburst, which vastly exceeded our allocated lab budget. Due to budgetary reasons, we show that Starburst can reduce 80% cloud costs:
+ for a 4 node, 96-CPU cluster, while jobs that are sent to the cloud are **logged to a file** instead.
 

@@ -1,4 +1,5 @@
 cvxpy
+gurobipy
 matplotlib
 seaborn
 jupyter
