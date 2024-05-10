@@ -145,7 +145,21 @@ Use `skyburst/notebooks/fig13_ablate_waiting_budget.ipynb` to plot the graphs wi
 
 Our MILP experiments requires access to GUROBI, a popular mathematical optimization solver. However, Gurobi requires a license. We provide our license to the artifact evaluators in `gurobi.lic`.
 
-See `skyburst/notebooks/optimal_solver.ipynb` to run the MILP and evaluate it against Starburst and other baselines.
+### Setup Gurobi
+
+We followed this link: https://support.gurobi.com/hc/en-us/articles/14799677517585-Getting-Started-with-Gurobi-Optimizer to setup Gurobi on our machines. This may vary across different distributions.
+
+It involved:
+- Installing Gurobi Optimizer
+- Retrieving and setting up Gurobi license, which is provided to artifact evaluators
+
+
+See `skyburst/notebooks/optimal_solver.ipynb` to run the MILP and evaluate it against Starburst and other baselines. Our experiments run the MILP for 8 hours, but we set it at 2 hours for the artifact evaluators.
+
+We also plot Gantt charts to show which jobs run on cluster and on cloud. Example provided below, with captions:
+
+
+
 
 ## Fig 14: Starburst w.r.t Bursty Workloads
 
