@@ -21,6 +21,8 @@ Our codebase requires Python >= 3.9. To install dependencies for Starburst, run:
 pip install -r requirements.txt
 ```
 
+Install `git-lfs` by following the instructions listed [here](https://docs.github.com/en/repositories/working-with-files/managing-large-files/installing-git-large-file-storage)
+
 Install the Philly and Helios traces with the follwoing code below:
 ```
 cd ~/
