@@ -31,4 +31,4 @@ python run_simulator_sweep.py \
 --preempt_cloud_ratio -1 3 \
 --seed 1994 \
 --filter_name helios_end2end \
---log ~/logs/eval/helios_end2end.log
+--log ~/logs/helios_end2end.log
