@@ -149,7 +149,7 @@ Our MILP experiments requires access to GUROBI, a popular mathematical optimizat
 
 ### Setup Gurobi
 
-We followed this link: https://support.gurobi.com/hc/en-us/articles/14799677517585-Getting-Started-with-Gurobi-Optimizer to setup Gurobi on our machines. This may vary across different distributions.
+We followed this link: https://support.gurobi.com/hc/en-us/articles/14799677517585-Getting-Started-with-Gurobi-Optimizer to setup Gurobi on our machines. This may vary across different distributions. Please place your `gurobi.lic` file in `/opt/gurobi` or your home directory. 
 
 It involved:
 - Installing Gurobi Optimizer
@@ -157,6 +157,11 @@ It involved:
 
 
 See `skyburst/notebooks/tab4_optimal_solver.ipynb` to run the MILP and evaluate it against Starburst and other baselines. Our experiments run the MILP for 8 hours, but we set it at 2 hours for the artifact evaluators.
+
+To run a headless version of the notebook, use the following command:
+```
+jupyter nbconvert --to notebook --execute '/home/gcpuser/skyburst/skyburst/notebooks/tab4_optimal_solver.ipynb' --output='/home/gcpuser/skyburst/skyburst/notebooks/tab4_optimal_solver_out.ipynb' --ExecutePreprocessor.timeout=-1
+```
 
 We also plot Gantt charts to show which jobs run on cluster and on cloud. An example is provided below, with captions to correctly interpret the Gantt chart:
 
