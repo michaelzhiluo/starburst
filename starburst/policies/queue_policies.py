@@ -99,7 +99,7 @@ class HybridCloudPolicy(BasePolicy):
                     job.set_timeout(
                         self.waiting_policy_cls.compute_timeout(job))
                 timeout = max(job.timeout, self.min_waiting_time)
-                #print(f'{job} has waited {wait_time}, max timeout {timeout}')
+                print(f'{job} has waited {wait_time}, max timeout {timeout}')
                 job_timed_out = wait_time >= timeout
                 if job_timed_out:
                     job_queue.remove(job)
