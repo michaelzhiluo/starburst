@@ -83,7 +83,7 @@ class HybridCloudPolicy(BasePolicy):
         self.waiting_coeff = policy_config['waiting_coeff']
         self.queue_policy = policy_config['queue_policy']
         self.loop = policy_config['loop']
-        self.min_waiting_time = policy_config['min_waiting_time']
+        self.min_waiting_time = float(policy_config['min_waiting_time'])
 
         self.waiting_policy_cls = waiting_policies.get_waiting_policy_cls(
             self.waiting_policy)(self.waiting_coeff)

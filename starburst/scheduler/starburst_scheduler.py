@@ -2,6 +2,7 @@
 Starburst scheduler.
 """
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 import logging
 import time
 import traceback
@@ -93,6 +94,7 @@ class StarburstSchedulerv0:
             self.cluster_managers['onprem'],
             self.cluster_managers['cloud'],
             policy_config=self.policy_config)
+        self.executor = ThreadPoolExecutor(max_workers=1)
 
     def process_event(self, event: BaseEvent):
         '''
@@ -140,6 +142,15 @@ class StarburstSchedulerv0:
         add_job.set_runtime()
         print(add_job.runtime)
         self.job_queue.append(add_job)
+    
+    async def process_queue_async(self):
+        """
+        Wrapper to run process_queue in a separate thread and await its completion.
+        """
+        loop = asyncio.get_running_loop()
+        # Run the potentially blocking process_queue call in a separate thread
+        await loop.run_in_executor(self.executor, self.queue_policy.process_queue, self.job_queue)
+
 
     async def scheduler_loop(self):
         """
@@ -155,18 +166,13 @@ class StarburstSchedulerv0:
                     event = self.event_queue.get_nowait()
             except Exception as e:
                 logger.debug(f"Exception: {e}: {traceback.print_exc()}")
-                pass
 
             if event:
                 self.process_event(event)
 
-            self.queue_policy.process_queue(self.job_queue)
+            await self.process_queue_async()
 
             loop_end_time = time.perf_counter()
-
-            # Call scheduler every SCHED_TICK seconds
-            # TODO(mluo): Make the scheduler truly async.
-            # Add two async events; Scheduler tick and job timeouts
             delta = loop_end_time - loop_start_time
             if delta < SCHED_TICK:
                 await asyncio.sleep(SCHED_TICK - delta)
