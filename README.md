@@ -151,7 +151,9 @@ Our MILP experiments requires access to GUROBI, a popular mathematical optimizat
 
 The Gurboi Optimizer should already be installed from setting up the Python dependencies. To provide the license, place your `gurobi.lic` file in `/opt/gurobi` or your home directory. 
 
-See `skyburst/notebooks/tab4_optimal_solver.ipynb` to run the MILP and evaluate it against Starburst and other baselines. Our experiments run the MILP for 8 hours; to run a headless version of the notebook, use the following command:
+See `skyburst/notebooks/tab4_optimal_solver.ipynb` to run the MILP and evaluate it against Starburst and other baselines. Our experiments run the MILP for 8 hours; we recommend the reviewer to try either 4 or 8 hours. 
+
+To run a headless version of the notebook, use the following command:
 ```
 jupyter nbconvert --to notebook --execute 'skyburst/notebooks/tab4_optimal_solver.ipynb'--ExecutePreprocessor.timeout=-1
 ```
