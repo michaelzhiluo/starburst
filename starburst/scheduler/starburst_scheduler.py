@@ -77,7 +77,6 @@ class StarburstSchedulerv0:
         self.event_logger = event_logger
 
         # Job queue
-        # TODO(mluo): Move to within Kubernetes instead.
         self.job_queue = []
 
         self.cluster_managers = {}
