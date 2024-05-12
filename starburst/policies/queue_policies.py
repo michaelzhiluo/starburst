@@ -113,6 +113,7 @@ class HybridCloudPolicy(BasePolicy):
                         self.cloud_manager.submit_job(job)
                         submit_preempted_job(job, job_queue)
                     else:
+                        job.set_preempt(False)
                         self.cloud_manager.submit_job(job)
                         print(f"{job} timed out")
                     

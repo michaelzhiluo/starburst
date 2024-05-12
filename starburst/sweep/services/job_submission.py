@@ -124,13 +124,17 @@ def parse_spillover_jobs(file_path: str):
     log_jobs = []
     for log in cloud_log_list:
         # Regex to find the job id and the expected job duration.
-        match = re.search(r"Job: job-(\S+)-(\S+) \| (\S+)", log)
+        match = re.search(r"Job: job-(\S+)-(\S+) \| Arrival: (\S+) \| Start: (\S+) \| Runtime: (\S+) \| cpu: (\S+) \| gpu: (\S+) \| Preempted: (\S+)", log)
+
         if match is None:
             continue
         match = match.groups()
         if match:
             # Convert the job id to an int.
             job_id = int(match[0])
+            preempted = match[7]
+            if preempted.lower() == "true":
+                continue
             log_jobs.append(job_id)
     return log_jobs
 
