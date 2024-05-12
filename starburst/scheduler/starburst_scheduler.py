@@ -15,7 +15,7 @@ from starburst.types.events import BaseEvent, EventTypes, SchedTick, \
 
 logger = logging.getLogger(__name__)
 
-SCHED_TICK = 0.2
+SCHED_TICK = 0.1
 
 def setup_cluster_manager(cluster_config: Dict[str, Any]) -> Manager:
     """ Create a cluster manager based on the cluster config. """
@@ -77,7 +77,6 @@ class StarburstSchedulerv0:
         self.event_logger = event_logger
 
         # Job queue
-        # TODO(mluo): Move to within Kubernetes instead.
         self.job_queue = []
 
         self.cluster_managers = {}
