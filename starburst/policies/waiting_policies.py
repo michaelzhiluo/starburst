@@ -78,7 +78,7 @@ class StarWaitingPolicy(BaseWaitingPolicy):
         if job.preempt:
             if resources['gpu'] == 0:
             # Assume CPU-only workload.
-                return 3*self.waiting_coeff * resources['cpu']
+                return 1.8*self.waiting_coeff * resources['cpu']
             elif resources['gpu'] > 0:
                 # Assume GPU-only workload
                 return 3*self.waiting_coeff * resources['gpu']
