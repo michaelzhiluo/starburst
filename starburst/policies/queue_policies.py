@@ -8,8 +8,9 @@ import threading
 import time
 from typing import Dict, List
 
-from starburst.cluster_managers import Manager, LogClusterManager, SkyPilotManager
+from starburst.cluster_managers import Manager
 from starburst.policies import waiting_policies
+from starburst.policies.waiting_policies import WaitingPolicyEnum
 from starburst.types.job import Job
 
 logger = logging.getLogger(__name__)
@@ -92,27 +93,28 @@ class HybridCloudPolicy(BasePolicy):
 
         # Loop through queue to release jobs which timeout
         if job_queue:
-            print("Queue", job_queue)
             for job in job_queue:
                 wait_time = time.time() - job.arrival
                 if job.timeout is None:
                     job.set_timeout(
                         self.waiting_policy_cls.compute_timeout(job))
                 timeout = max(job.timeout, self.min_waiting_time)
-                print(f'{job} has waited {wait_time}, max timeout {timeout}')
+                #print(f'{job} has waited {wait_time}, max timeout {timeout}')
                 job_timed_out = wait_time >= timeout
                 if job_timed_out:
                     job_queue.remove(job)
-                    if self.waiting_policy == waiting_policies.WaitingPolicyEnum.STAR.value and not job.preempt and job.runtime > waiting_policies.STAR_WAIT_THRESHOLD:
+                    if (self.waiting_policy == WaitingPolicyEnum.STAR.value 
+                        and not job.preempt 
+                        and job.runtime > waiting_policies.STAR_WAIT_THRESHOLD):
                         # Jobs longer than 5 min are preempted from cloud back to onprem.
-                        logger.debug(f'Preempted job entered || job {job.name} | queue {job_queue}')
+                        print(f'Preempt {job}')
                         # Start thread
                         job.set_preempt(True)
                         self.cloud_manager.submit_job(job)
                         submit_preempted_job(job, job_queue)
                     else:
                         self.cloud_manager.submit_job(job)
-                    print(f"{job} timed out")
+                        print(f"{job} timed out")
                     
 
             # Loop through the queue for submitting jobs to on-prem.
@@ -133,8 +135,7 @@ def resubmit_job(job: Job, job_queue: List[Job]):
     # Submit job to on-prem
     job.set_timeout(None)
     job_queue.append(job)
-    print(f"Job queue: {job_queue} <------------- ")
-    print(f"Resubmitted {job} to on-prem")
+    print(f"Resubmit pre-empted {job}")
 
 def submit_preempted_job(job, job_queue: List[Job]):
     # Resubmit preempted job in a separate thread that sleeps for 29.8 seconds
