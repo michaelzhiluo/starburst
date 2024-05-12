@@ -1,4 +1,5 @@
 kubernetes
+skypilot
 grpcio
 grpcio-tools
 asyncio
