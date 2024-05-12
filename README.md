@@ -18,12 +18,16 @@ We provide several options for the evaluator to install Starburst.
 
 Our codebase requires Python >= 3.9. To install dependencies for Starburst, run:
 ```
+cd ~/
+git clone --recurse-submodules https://github.com/michaelzhiluo/starburst.git
+cd starburst
 pip install -r requirements.txt
+pip install -e .
 ```
 
 Install `git-lfs` by following the instructions listed [here](https://docs.github.com/en/repositories/working-with-files/managing-large-files/installing-git-large-file-storage)
 
-Install the Philly and Helios traces with the follwoing code below:
+Install the Philly and Helios traces with the following code below:
 ```
 cd ~/
 git lfs clone https://github.com/msr-fiddle/philly-traces.git
@@ -36,11 +40,11 @@ cd HeliosData
 unzip data.zip
 ```
 
-One of our experiments uses Gurobi to solve a mixed integeger linear program (MILP). As Gurobi is more difficult to setup (and the user may opt to SSH to our machine instead), we defer setup for Gurobi in the Simulator Experiment (Table 4) section.
+One of our experiments uses Gurobi to solve a mixed integeger linear program (MILP). Move the provided Gurobi license file under `~/`.
 
 ## 2. SSH to VM
 
-We also provide our private key for evaluators to run experiments in our VM, which already has everything setup! The VM contains the repositories for both simulator, real-world system, Gurobi, and the Philly/Helios traces.
+We also provide our private key for evaluators to run experiments in our VM, which already has everything setup! The VM contains the repositories for both simulator, real-world system (Kubernetes cluster), Gurobi, and the Philly/Helios traces.
 
 For best expereince, we recommend linking VSCode remote explorer with the SSH'ed VM by modifying the SSH config file `~/.ssh/config`:
 
@@ -185,6 +189,8 @@ Use `skyburst/notebooks/fig15_ablate_queue_binpack.ipynb` to plot the graphs wit
 
 
 # Real System Experiments
+
+We recommend SSH'ing to our VM to run the real-world experiments, which runs over a real GKE Kubernetes cluster.
 
 We note that our experiments evaluate over a 4 node, 8 V100/node cluster, which was provisoined as a GKE cluster on Google Cloud, with Skypilot for cloud jobs. This incurred $40K cloud costs during the development of Starburst, which vastly exceeded our allocated lab budget. Due to budgetary reasons, we show that Starburst can reduce 80% cloud costs:
  for a 4 node, 96-CPU cluster, while jobs that are sent to the cloud are **logged to a file** instead.
