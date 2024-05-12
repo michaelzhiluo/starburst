@@ -16,7 +16,7 @@ def generate_data_run_simulator(run_config):
     return run_simulator(proc_jobs, run_config)
 
 
-def run_grid_search(run_configs, num_procs=40):
+def run_grid_search(run_configs, num_procs=32):
     for i, r in enumerate(run_configs):
         r['pbar_idx'] = i
     run_configs = [[r] for r in run_configs]

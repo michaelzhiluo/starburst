@@ -1,0 +1,34 @@
+# Sweep Parameters
+workload_type: cpu_sleep
+submit_time: 40
+random_seed: 13
+
+# Job generation parameters
+arrival_dist: uniform
+arrival_param: 5 # Unifrom, job is submitted every [arrival_param] seconds.
+min_arrival_time: 3
+mean_duration: 20
+min_duration: 10
+cpu_dist: [1]
+cpu_sizes: [8]
+image: gcr.io/sky-burst/skyburst:latest
+
+
+# Policy Parameters
+waiting_policy: zero
+waiting_coeff: 5
+waiting_budget: -1
+queue_policy: fifo
+loop: False
+min_waiting_time: 0
+ 
+# Cluster Parameters
+clusters:
+  # On-premise cluster config.
+  onprem:
+    cluster_type: k8
+    cluster_name: local
+  # Cloud cluster config.
+  cloud:
+    cluster_type: log
+    cluster_name: cloud

@@ -1,0 +1,88 @@
+
+#====================================================================================================#
+#                                            Sweep Parameters                                        #
+#====================================================================================================#
+# Sweep currently supports 3 types of jobs: CPU sleep jobs ('cpu_sleep'), GPU sleep jobs ('gpu_sleep'), and
+# real-life GPU training jobs ('gpu_train').
+workload_type: cpu_sleep
+# Total time (in seconds) where incoming jobs are submitted. After this time, no more jobs are submitted.
+submit_time: 300
+# Random seed for the job generator. This is used to generate the same set of jobs across different runs.
+random_seed': 13
+#====================================================================================================#
+#                                       Job Generation Parameters                                    #
+#====================================================================================================#
+# Job arrival distribution. Currently, we support two types of distributions: uniform and poisson.
+arrival_dist: uniform  # 'uniform', 'poisson'
+# Job arrival parameter. This defines the average time between job arrivals.
+arrival_param: 10
+# Minimum job arrival time. This is used to prevent jobs from being too close to each other.
+# Note: Do not set it to be less than 3 seconds. Otherwise, the scheduler may not work properly.
+min_arrival_time: 3
+# Job duration distribution, which is assumed to be exponential.
+mean_duration: 30
+# Minimum job duration. This is used to prevent jobs from being too short.
+min_duration: 30
+# Maximum job duration. This is used to prevent jobs from being too long (to save cloud costs).
+max_duration: 10000
+# Distribution of CPU resources requested by jobs. Applies for `workload_type: cpu_sleep`
+# List of CPU sizes (in cores) that jobs can request.
+cpu_sizes: [1, 2, 4, 8, 16, 32]
+# List of probabilities for each CPU size. The length of cpu_dist must be equal to the length of cpu_sizes.
+cpu_dist: [0, 0.2, 0.2, 0.2, 0.2, 0.2]
+# Distribution of GPU resources requested by jobs. Applies for `workload_type: gpu_sleep, gpu_train`
+# List of GPU sizes that jobs can request. Multi-node jobs are not supported.
+gpu_sizes: [1, 2, 4, 8]
+# List of probabilities for each GPU size. The length of gpu_dist must be equal to the length of gpu_sizes.
+# The default distribution follows the jobs in the Microsoft Philadelphia Deep Learning cluster.
+gpu_dist: [0.7, 0.15, 0.1, 0.05]
+# Docker image for all jobs. Pods are launched with this docker image.
+image: gcr.io/deeplearning-platform-release/pytorch-gpu.1-12
+#====================================================================================================#
+#                                           Cluster Parameters                                       #
+#====================================================================================================#
+clusters:
+  # On-premise cluster config.
+  onprem:
+    # Limitation: Only k8 for now.
+    cluster_type: k8
+    # GKE cluster name for on-prem cluster. This is used to submit jobs to the on-prem cluster.
+    cluster_name: mluo-onprem
+  # Cloud cluster config.
+  cloud:
+    # Which cluster manager type the cluster is.
+    # Possible options: ['log', 'k8', 'skypilot']
+    #   • Log: Logs the jobs onto a log file.
+    #   • K8: Uses `cloud_cluster` (GKE cluster) to submit and run jobs.
+    #   • Skypilot: Uses Skypilot to automatically provision a cloud cluster and submit and run jobs on the cluster.
+    cluster_type: k8
+    cluster_name: mluo-cloud
+
+#====================================================================================================#
+#                                          Scheduler Parameters                                      #
+#====================================================================================================#
+# Scheduling tick, how often the scheduler is invoked (in seconds).
+schedule_tick: 1
+# Queueing policy which sets the order of the jobs in the queue
+# Possible options: ['fifo', 'sjf']
+queue_policy: fifo
+# Waiting policy which sets how long jobs wait in queue before timing out to the cloud.
+# Possible options: ['infinite', 'constant', 'runtime', 'resource', 'compute']
+waiting_policy: constant
+# Sets the hyperparameter for each waiting policy
+#   • Infinite: Waiting coeff doesn't matter, jobs wait forever.
+#   • Constant: Jobs wait for waiting_coeff seconds.
+#   • Runtime: Jobs wait for waiting_coeff * job's est. runtime.
+#   • Resource: Jobs wait for waiting_coeff * job's resource request (GPUs or CPUs).
+#   • Compute: Jobs wait for waiting_coeff * job's resource request (GPUs or CPUs) * job's est. runtime.
+waiting_coeff: 10
+# Estimates the waiting coeff based on the waiting budget. Overrides waiting_coeff if it is set to a non-negative value.
+# Example: If waiting_budget = 0.25, the total waiting budget is 25% of the total job runtime (sum from all generated jobs).
+# The waiting budget is allocated to all jobs based on the waiting policy and a job's characteristics.
+# The waiting coeff can thus be solved algebraically over all jobs.
+waiting_budget: -1
+# Minimum waiting waiting for jobs. Equivalent to Kubernetes cluster autoscaler 10 (s) waiting time.
+min_waiting_time: 10
+# Removes head of line blocking, allows scheduler to loop through all jobs in the queue.
+# TODO: Change to out-of-order
+loop: False

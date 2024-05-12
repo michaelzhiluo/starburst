@@ -1,0 +1,37 @@
+# Sweep Parameters
+workload_type: artifact_eval
+submit_time: 10800 # 3 hours
+random_seed: 13
+
+# Job generation parameters
+arrival_dist: poisson
+# 24 for s=0.75, 32 for s=1.1
+arrival_param: 32 # Jobs/hour
+min_arrival_time: 3
+mean_duration: 2700 # 45 minutes, in seconds
+min_duration: 30
+max_duration: 10000
+gpu_dist: [0.7, 0.15, 0.1, 0.05] #Philly Distribution
+gpu_sizes: [1, 2, 4, 8]
+image: gcr.io/sky-burst/skyburst:latest
+
+# Policy Parameters
+# Zero Policy
+waiting_policy: [constant]
+waiting_coeff: -1
+waiting_budget: 0.25
+queue_policy: fifo
+# Rerun constant with loop=False.
+loop: False
+min_waiting_time: 15
+ 
+# Cluster Parameters
+clusters:
+  # On-premise cluster config.
+  onprem:
+    cluster_type: k8
+    cluster_name: local
+  # Cloud cluster config.
+  cloud:
+    cluster_type: log #skypilot
+    cluster_name: cloud

@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: job-0
+  labels: 
+    track: sleep
+    cluster: local
+  annotations:
+    estimated_runtime: "10.0"
+spec:
+  backoffLimit: 1  
+  template: 
+    spec:
+      restartPolicy: Never  
+      volumes: 
+      - name: dshm
+        emptyDir: 
+          medium: Memory
+      schedulerName: chakra
+      containers: 
+      - name: sleep
+        image: gcr.io/sky-burst/skyburst:latest
+        volumeMounts: 
+        - name: dshm
+          mountPath: /dev/shm
+        command: ["/bin/sh", "-c"]
+        args:
+        - |          
+          echo '||' && sleep 10.0
+        resources:
+          limits:
+            cpu: 1
+            
+          requests:
+            cpu: 1

@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package starburst;
+
+// Interface exported by the starburst scheduler
+service JobSubmission {
+  rpc SubmitJob(JobMessage) returns (JobAck){}
+}
+
+message JobMessage {
+  string JobYAML = 1;
+}
+
+message JobAck {
+  int32 retcode = 1;
+}

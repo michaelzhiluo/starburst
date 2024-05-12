@@ -1,0 +1,42 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{name}}
+  labels: 
+    track: sleep
+    cluster: {{cluster_name}}
+  annotations:
+    {% if estimated_runtime is not none %}
+    estimated_runtime: "{{ estimated_runtime }}"
+    {% endif %}
+spec:
+  backoffLimit: 1  
+  template: 
+    spec:
+      restartPolicy: Never  
+      volumes: 
+      - name: dshm
+        emptyDir: 
+          medium: Memory
+      schedulerName: chakra
+      containers: 
+      - name: sleep
+        image: {{image}}
+        volumeMounts: 
+        - name: dshm
+          mountPath: /dev/shm
+        command: ["/bin/sh", "-c"]
+        args:
+        - |          
+          {{run}}
+        resources:
+          limits:
+            cpu: {{cpu}}
+            {% if gpu != 0 %}
+            nvidia.com/gpu: {{ gpu }}
+            {% endif %}
+          requests:
+            cpu: {{cpu}}
+            {% if gpu != 0 %}
+            nvidia.com/gpu: {{ gpu }}
+            {% endif %}
