@@ -22,7 +22,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Job submission parameters
-GRPC_PORT = 30000
+GRPC_PORT = 50001
 
 # Other parameters
 SCHED_TICK_TIME = 1

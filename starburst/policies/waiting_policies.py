@@ -3,7 +3,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-STAR_WAIT_THRESHOLD = 298
+STAR_WAIT_THRESHOLD = 300
 
 class WaitingPolicyEnum(enum.Enum):
     """
@@ -44,7 +44,7 @@ class BaseWaitingPolicy(object):
 class InfiniteWaitingPolicy(BaseWaitingPolicy):
 
     def compute_timeout(self, job):
-        return self.waiting_coeff
+        return 1e9
 
 
 class ConstantWaitingPolicy(BaseWaitingPolicy):
