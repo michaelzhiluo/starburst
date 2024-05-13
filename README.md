@@ -40,7 +40,7 @@ cd HeliosData
 unzip data.zip
 ```
 
-Finaly, move the provided Gurobi license file to `~/gurobi.lic`. One of our experiments uses Gurobi to solve a mixed integeger linear program (MILP). 
+Finaly, move the provided Gurobi license file to `~/gurobi.lic`. One of our experiments uses Gurobi to solve a mixed integer linear program (MILP). 
 
 ## 2. SSH to VM
 
@@ -164,7 +164,7 @@ jupyter nbconvert --to notebook --execute 'skyburst/notebooks/tab4_optimal_solve
 
 We also plot Gantt charts to show which jobs run on cluster and on cloud. An example is provided below, with captions to correctly interpret the Gantt chart:
 
-<img src="gantt.svg" width=80% height=80%>
+<img src="images/gantt.svg" width=80% height=80%>
 
 
 ## Fig 14: Starburst w.r.t Bursty Workloads
@@ -193,17 +193,18 @@ Use `skyburst/notebooks/fig15_ablate_queue_binpack.ipynb` to plot the graphs wit
 Our real system is implemented in `~/starburst/starburst`. The general directory structure generally follows:
 - `starburst/cluster-managers` - Compatibility layer for different Cluster managers, including Kubernetes, Skypilot, and simply logging to a file.
 - `starburst/drivers` - Driver to launch Starburst's higher-level scheduler and submit job script to submit jobs to our higher level scheduler.
+- `starburst/event_sources` - General GRPC classes to handle message passing to Starburst.
+- `starburst/plots` - Our plotting code for sweep experiments, `plot_real.ipynb`.
 - `starburst/sweep` - Runs job submission over Starburst scheduler for long periods of times. Keeps track of running statistics, including job runtime, start time, and wait time.
-- `starburst/sweep_examples` - Example configs to run jobs over the Starburst scheduler.
+- `starburst/sweep_examples` - Example configs to run jobs over the Starburst scheduler with different scheduling policies.
+\
+**We suggest running real-world experiments in our provided SSH VM, which has access to the 4 node, 24 CPU GKE cluster as our local cluster.**
 
 ## Assumptions
 
 - Due to our team vastly exceeding our allocated lab budget, the real world experiments will simulate a 4 node, 8 GPU/node on-premise Kubernetes (GKE) cluster with a **4 node, 24 CPU/node Kubernetes cluster** to significantly reduce costs, where 1 GPU is equivalent to 3 CPU job. We will leave this GKE cluster on for the entirety of the artifact evaluation period.
-- Insteading of provisioning cloud resources with Skypilot, cloud-running jobs are sent to a log file instead to further reduce costs and to avoid hitting quota limits. You can see them in `~/starburst/starburst/sweep_logs/[RUN_ID]/events/0.log`.
+- Insteading of provisioning cloud resources with Skypilot, cloud-running jobs are sent to a log file instead to further reduce costs and to avoid hitting cloud quota limits. You can see them in `~/starburst/starburst/sweep_logs/[RUN_ID]/events/0.log`.
 - We run sleep jobs as opposed to training jobs, as there are no GPUs to run training. The sleep jobs are sampled from real-world training jobs, with the sleeping duration equivalent to the predicted runtime of training jobs.
-- 
-
-**We suggest running real-world experiments in our provided SSH VM, which has access to the 4 node, 24 CPU GKE cluster as our local cluster.**
 
 ## Running Real-World Experiments
 
@@ -248,16 +249,21 @@ Similar to our simulator, we have precomputed sweep logs in our storage bucket `
 gsutil -m cp -r gs://starburst_bucket/sweep_logs ~/starburst/starburst/
 ```
 
-Follow the notebook in `~/starburst/starburst/plots/plot_real.ipynb` to get cloud costs and Gantt charts (see image abvoe) for all runs. To compare the real-life runs with our simulator, the simulator fidelity notebook can be found in `~/starburst/skyburst/notebooks/simulator_fidelity.ipynb`.
+Follow the instructions in the notebook `~/starburst/starburst/plots/plot_real.ipynb` to get cloud costs and plot Gantt charts for all runs. To compare the real-life runs with our simulator, the simulator fidelity notebook can be found in `~/starburst/skyburst/notebooks/simulator_fidelity.ipynb`.
 
-We note that for our provided logs (and if reviewers want to run and create their own logs), the costs between simulator and our real-world results are very similar.
+We note that for our provided logs (and if reviewers also want to run and create their own logs), the costs between simulator and our real-world results are very similar. On the left side of the images below is our real-life experiments (`starburst/plots/plot_real.ipynb`) and the right side is our simulation of the real-world experiments (`skyburst/notebooks/simulator_fidelity.ipynb`). See `images/gantt.svg` to understand the Gantt charts below.
 
+For No-Wait, both our real-life system and simulator achieve similar costs -  48.72 versus 48.3. 
+
+<img src="images/no-wait-fidelity.png" width=90% height=90%>
+
+For Starburst, both our real-life system and simulator also achieve similar costs - 18.33 vs 18.41.
+
+<img src="images/starburst-note-fidelity.png" width=90% height=90%>
+
+Most notably, in this example, Starburst reduces costs by around **100% * (1 - 18.33/48.72) = 62.37%**, which validates our paper's claims.
 
 ## Miscellaneous
-
-### Provisioning a Kubernetes cluster.
-
-While we provide a GKE cluster, we also provide optional steps to create your own GKE cluster.
 
 ### Starburst System Config
 
@@ -299,3 +305,28 @@ clusters:
     cluster_type: log # Can also be skypilot or another K8 cluster.
     cluster_name: cloud
 ```
+
+
+### Provisioning a Kubernetes cluster.
+
+While we provide a GKE cluster, we also provide optional steps to create your own GKE cluster to run our evaluation. Run:
+```
+gcloud beta container --project [PROJECT_ID] clusters create [CLUSTER_NAME] \
+  --machine-type "n2-custom-26-32768" \
+  --image-type "COS_CONTAINERD" \
+  --disk-type "pd-balanced" \
+  --disk-size "100" \
+  --metadata disable-legacy-endpoints=true \
+  --num-nodes "4" \
+  --enable-autoupgrade \
+  --enable-autorepair \
+  --node-locations [ZONE]
+```
+
+Once the GKE cluster is provisoined, run the following commands to fetch the Kubenetes config and rename the cluster:
+```
+gcloud container clusters get-credentials [CLUSTER_NAME]
+ kubectl config rename-context [CLUSTER_NAME] local
+```
+
+Finally, to ensure fidelity with our simulator, our experiments assume the container image is cached on each node of the cluster. To make sure all images are on the machine, simply run a sweep for any example in `sweep_examples/artifact_eval` and kill it in the middle of executing. This ensure that all nodes have at least one job scheduled to it, which initiates the ContainerPulling process.
