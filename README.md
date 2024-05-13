@@ -8,11 +8,11 @@ This guide is designed you to set up, run experiments, and replicate evaluation 
 
 - **Setup**: How to setup Starburst (both simulator and our real-world experiments) in your Python environment OR through Docker.
 - **Simulator Exps**: Run all our simulation experiments and replicate our results.
-- **Real-World Exps**: Run our schedulers over Kubernetes on-prem cluster and run job submission pipeline. We place this last, as it is much more complicated and takes much longer to run.
+- **Real-World Exps**: Run our schedulers over Kubernetes on-prem cluster and run job submission pipeline. We place this last, as this takes ~1 day to run and is fairly complex.
 
 # Setup
 
-We provide several options for the evaluator to install Starburst.
+We provide several options for the evaluator to install Starburst. We suggest users can run our simulation experiments either on their laptop/server or our provided VM. However, for real-world experiments, 
 
 ## 1. Python Setup
 
@@ -40,17 +40,17 @@ cd HeliosData
 unzip data.zip
 ```
 
-One of our experiments uses Gurobi to solve a mixed integeger linear program (MILP). Move the provided Gurobi license file under `~/`.
+Finaly, move the provided Gurobi license file to `~/gurobi.lic`. One of our experiments uses Gurobi to solve a mixed integeger linear program (MILP). 
 
 ## 2. SSH to VM
 
-We also provide our private key for evaluators to run experiments in our VM, which already has everything setup! The VM contains the repositories for both simulator, real-world system (Kubernetes cluster), Gurobi, and the Philly/Helios traces.
+We also provide our private key and IP address of our VM for evaluators to run experiments in our VM, which already has everything setup! The VM contains the repositories for both simulator, real-world system (Kubernetes cluster), Gurobi, and the Philly/Helios traces.
 
 For best expereince, we recommend linking VSCode remote explorer with the SSH'ed VM by modifying the SSH config file `~/.ssh/config`:
 
 ```
 Host starburst
-  HostName 34.121.144.68
+  HostName [IP_ADDRESS]
   User gcpuser
   IdentityFile [PATH_TO_PRIVATE_KEY]
   IdentitiesOnly yes
@@ -190,8 +190,112 @@ Use `skyburst/notebooks/fig15_ablate_queue_binpack.ipynb` to plot the graphs wit
 
 # Real System Experiments
 
-We recommend SSH'ing to our VM to run the real-world experiments, which runs over a real GKE Kubernetes cluster.
+Our real system is implemented in `~/starburst/starburst`. The general directory structure generally follows:
+- `starburst/cluster-managers` - Compatibility layer for different Cluster managers, including Kubernetes, Skypilot, and simply logging to a file.
+- `starburst/drivers` - Driver to launch Starburst's higher-level scheduler and submit job script to submit jobs to our higher level scheduler.
+- `starburst/sweep` - Runs job submission over Starburst scheduler for long periods of times. Keeps track of running statistics, including job runtime, start time, and wait time.
+- `starburst/sweep_examples` - Example configs to run jobs over the Starburst scheduler.
 
-We note that our experiments evaluate over a 4 node, 8 V100/node cluster, which was provisoined as a GKE cluster on Google Cloud, with Skypilot for cloud jobs. This incurred $40K cloud costs during the development of Starburst, which vastly exceeded our allocated lab budget. Due to budgetary reasons, we show that Starburst can reduce 80% cloud costs:
- for a 4 node, 96-CPU cluster, while jobs that are sent to the cloud are **logged to a file** instead.
+## Assumptions
 
+- Due to our team vastly exceeding our allocated lab budget, the real world experiments will simulate a 4 node, 8 GPU/node on-premise Kubernetes (GKE) cluster with a **4 node, 24 CPU/node Kubernetes cluster** to significantly reduce costs, where 1 GPU is equivalent to 3 CPU job. We will leave this GKE cluster on for the entirety of the artifact evaluation period.
+- Insteading of provisioning cloud resources with Skypilot, cloud-running jobs are sent to a log file instead to further reduce costs and to avoid hitting quota limits. You can see them in `~/starburst/starburst/sweep_logs/[RUN_ID]/events/0.log`.
+- We run sleep jobs as opposed to training jobs, as there are no GPUs to run training. The sleep jobs are sampled from real-world training jobs, with the sleeping duration equivalent to the predicted runtime of training jobs.
+- 
+
+**We suggest running real-world experiments in our provided SSH VM, which has access to the 4 node, 24 CPU GKE cluster as our local cluster.**
+
+## Running Real-World Experiments
+
+There are a total of four runs - for No-Wait, Constant-Wait, Starburst, and Starburst without a time estimator (No-TE). Each run takes ~4-6 hours to complete. To run each run, launch Chakra, our scheduler plugin for Kubernetes for best-bit binpacking:
+```
+# We highly recommend deleting and redeploying Chakra for each run. If jobs are pending in middle of a run, it is most likely Chakra has errored.
+# Note if jobs are pending state (run `kubectl get pods`) anytime in the middle of a run, we suggest restarting the run. 
+cd ~/starburst/chakra
+# Delete Chakra deployment from prior run.
+kubectl delete deployment chakra-scheduler
+# Deploy Chakra admin roles. (only needs to be done once)
+kubectl apply -f chakra_admin.yaml
+# Deploy Chakra.
+kubectl apply -f chakra.yaml
+```
+
+We note that the runs **must be ran sequentially**, as there is only one cluster. To launch our runs:
+```
+cd ~/starburst/starburst/sweep
+# Ideally run this as a background process (such as in Tmux or Screen).
+# No-Wait - ../sweep_examples/artifact_eval/no-wait.yaml
+# Constant-Wait - ../sweep_examples/artifact_eval/constant-wait.yaml
+# Starburst - ../sweep_examples/artifact_eval/starburst.yaml
+# Starburst (No-TE) - ../sweep_examples/artifact_eval/starburst-note.yaml
+python submit_sweep.py --config ../sweep_examples/artifact_eval/no-wait.yaml
+```
+
+Each run will log its outputs to `~/starburst/starburst/sweep_logs/[RUN_ID]`.
+
+Finally, we require running post processing on the logs for each. To launch our post-processing script, run:
+```
+cd ~/starburst/starburst/sweep
+python process_logs.py --log_path ../sweep_logs/[RUN_ID]
+```
+
+## Plotting Real-World Experiments
+
+Similar to our simulator, we have precomputed sweep logs in our storage bucket `gs://starburst_bucket/sweep_logs`. To use our data, download the sweep logs into the Starburst repository:
+
+```
+# Will download the our sweep logs to Starburst.
+gsutil -m cp -r gs://starburst_bucket/sweep_logs ~/starburst/starburst/
+```
+
+Follow the notebook in `~/starburst/starburst/plots/plot_real.ipynb` to get cloud costs and Gantt charts (see image abvoe) for all runs. To compare the real-life runs with our simulator, the simulator fidelity notebook can be found in `~/starburst/skyburst/notebooks/simulator_fidelity.ipynb`.
+
+We note that for our provided logs (and if reviewers want to run and create their own logs), the costs between simulator and our real-world results are very similar.
+
+
+## Miscellaneous
+
+### Provisioning a Kubernetes cluster.
+
+While we provide a GKE cluster, we also provide optional steps to create your own GKE cluster.
+
+### Starburst System Config
+
+We provide an example sweep config below to help evaluators better understand our system.
+```
+# Sweep Parameters
+workload_type: artifact_eval # Artifact Evaluation workload consists of sleep jobs that are sampled from real-world training jobs (Sec 6.2).
+submit_time: 10800 # Submitting jobs over a 3 hour (10800s), period.
+random_seed: 13
+
+# Job generation parameters
+arrival_dist: poisson
+# 24 for s=0.75, 32 for s=1.1
+arrival_param: 32 # 32 Jobs/hour
+min_arrival_time: 3
+mean_duration: 2700 # Avg job is 45 minutes (2700s) long, sampled from exponential distribution.
+min_duration: 30 # Clip job runtimes.
+max_duration: 10000 # Clip job runtimes.
+gpu_dist: [0.7, 0.15, 0.1, 0.05] # Philly Distribution (Percentage of jobs that have X GPUs)
+gpu_sizes: [1, 2, 4, 8]
+image: gcr.io/sky-burst/skyburst:latest # Our public image contains 
+
+# Policy Parameters
+waiting_policy: [zero] # Waiting policy, can be infinite, constant, compute, star
+waiting_coeff: -1 # Coefficient to waiting policy
+waiting_budget: 0.25 # Waiting policy's waiting budget - this will be used to compute and override waiting_coeff if specified.
+queue_policy: fifo # Order of the queue (FIFO).
+loop: False # Enable out-of-order scheduling. Used for compute and star waiting policies.
+min_waiting_time: 15 # Minimum waiting time (in seconds) for all jobs (to avoid concurrency bugs).
+ 
+# Cluster Parameters
+clusters:
+  # On-premise cluster config.
+  onprem:
+    cluster_type: k8
+    cluster_name: local # The name of the Kubernetes cluster in `~/.kube/config`.
+  # Cloud cluster config.
+  cloud:
+    cluster_type: log # Can also be skypilot or another K8 cluster.
+    cluster_name: cloud
+```
