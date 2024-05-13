@@ -208,6 +208,11 @@ Our real system is implemented in `~/starburst/starburst`. The general directory
 
 ## Running Real-World Experiments
 
+To run our real-world experiments, we [Chakra](https://github.com/michaelzhiluo/chakra/tree/fa4799bfc67ea983936b7c88864cbe35719eca0f) as a git submodule. Install it using the following command:
+```
+git submodule update --init --recursive
+```
+
 There are a total of four runs - for No-Wait, Constant-Wait, Starburst, and Starburst without a time estimator (No-TE). Each run takes ~4-6 hours to complete. To run each run, launch Chakra, our scheduler plugin for Kubernetes for best-bit binpacking:
 ```
 # We highly recommend deleting and redeploying Chakra for each run. If jobs are pending in middle of a run, it is most likely Chakra has errored.
