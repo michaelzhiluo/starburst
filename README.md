@@ -213,7 +213,7 @@ To run our real-world experiments, we [Chakra](https://github.com/michaelzhiluo/
 git submodule update --init --recursive
 ```
 
-There are a total of four runs - for No-Wait, Constant-Wait, Starburst, and Starburst without a time estimator (No-TE). Each run takes ~4-6 hours to complete. To run each run, launch Chakra, our scheduler plugin for Kubernetes for best-bit binpacking:
+There are a total of four runs - for No-Wait, Constant-Wait, Starburst, and Starburst without a time estimator (No-TE). Each run takes ~4-6 hours to complete. To setup, launch Chakra, our scheduler plugin for Kubernetes for best-bit binpacking:
 ```
 # We highly recommend deleting and redeploying Chakra for each run. If jobs are pending in middle of a run, it is most likely Chakra has errored.
 # Note if jobs are pending state (run `kubectl get pods`) anytime in the middle of a run, we suggest restarting the run. 
@@ -244,6 +244,10 @@ Finally, we require running post processing on the logs for each. To launch our 
 cd ~/starburst/starburst/sweep
 python process_logs.py --log_path ../sweep_logs/[RUN_ID]
 ```
+
+If the steps above were followed correctly, both the Chakra deployment and the submitted jobs should be visible when running `kubectl get pods`:
+
+<img src="images/terminal.png" width=90% height=90%>
 
 ## Plotting Real-World Experiments
 
