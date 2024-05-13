@@ -29,7 +29,7 @@ clusters:
   # On-premise cluster config.
   onprem:
     cluster_type: k8
-    cluster_name: local-0
+    cluster_name: local
   # Cloud cluster config.
   cloud:
     cluster_type: log #skypilot
