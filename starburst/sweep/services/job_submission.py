@@ -217,6 +217,7 @@ def submission_loop(
 
     # Once all jobs have been submitted, continually check the status of the
     # jobs until all jobs have completed.
+    print("Job submission complete; waiting for all jobs to complete...")
     file_logger.append(f"Waiting for {total_jobs} jobs to complete...")
     while True:
         if job_tracker.check_if_jobs_finished():
