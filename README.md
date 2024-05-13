@@ -81,7 +81,7 @@ Host starburst
 
 # Simulation Experiments
 
-We note that all our simulators logs for all our experiments (including Appendix) are saved in a public Google Cloud Storage bucket: `gs://starburst_bucket/logs`. If the user wants to save time, all our results can be directly fetched from this bucket and directly plotted with the Jupyter notebooks provided in `skyburst/notebooks`. 
+All our simulation code is in `skyburst` directory. We note that all our simulators logs for all our experiments (including Appendix) are saved in a public Google Cloud Storage bucket: `gs://starburst_bucket/logs`. If the user wants to save time, all our results can be directly fetched from this bucket and directly plotted with the Jupyter notebooks provided in `skyburst/notebooks`. 
 
 To do so, install Gcloud on your machine and run the following command to pull the logs from the bucket:
 ```
