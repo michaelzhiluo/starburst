@@ -231,6 +231,8 @@ To run our real-world experiments, we use [Chakra](https://github.com/michaelzhi
 git submodule update --init --recursive
 ```
 
+Before launching runs, the reviewer should make sure that the image `gcr.io/sky-burst/skyburst:latest` is cached on all nodes (pre-pulled) of the Kubernetes cluster. This ensures that there is no `ContainerCreate` state, which introduce container download delays and is not captured in our simulator. Our provided VM already has the image cached on all nodes, but we note this if the evaluator observes jobs/pods that are pulling images for too long.
+
 There are a total of four runs - for No-Wait, Constant-Wait, Starburst, and Starburst without a time estimator (No-TE). Each run takes ~3-5 hours to complete. To setup, launch Chakra, our scheduler plugin for Kubernetes for best-bit binpacking:
 ```
 # We highly recommend deleting and redeploying Chakra for each run. If jobs are pending in middle of a run, it is most likely Chakra has errored.
@@ -255,7 +257,8 @@ cd ~/starburst/starburst/sweep
 python submit_sweep.py --config ../sweep_examples/artifact_eval/no-wait.yaml
 ```
 
-Each run will log its outputs to `~/starburst/starburst/sweep_logs/[RUN_ID]`.
+While the run is executing, progress of jobs submitted thus far can be visualized with `kubectl get pods`.
+Furthermore, each run will log its outputs to `~/starburst/starburst/sweep_logs/[RUN_ID]`.
 
 Finally, we require running post processing on the logs for each. To launch our post-processing script, run:
 ```
