@@ -208,7 +208,7 @@ Our real system is implemented in `~/starburst/starburst`. The general directory
 
 ## Running Real-World Experiments
 
-To run our real-world experiments, we [Chakra](https://github.com/michaelzhiluo/chakra/tree/fa4799bfc67ea983936b7c88864cbe35719eca0f) as a git submodule. Install it using the following command:
+To run our real-world experiments, we [Chakra](https://github.com/michaelzhiluo/chakra/tree/fa4799bfc67ea983936b7c88864cbe35719eca0f) as a git submodule. If you cloned without installing the submodules, use the following command:
 ```
 git submodule update --init --recursive
 ```
