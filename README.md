@@ -6,13 +6,31 @@
 
 This guide is designed you to set up, run experiments, and replicate evaluation for Starburst. We split this document into 3 sections:
 
-- **Setup**: How to setup Starburst (both simulator and our real-world experiments) in your Python environment OR through Docker.
-- **Simulator Exps**: Run all our simulation experiments and replicate our results.
-- **Real-World Exps**: Run our schedulers over Kubernetes on-prem cluster and run job submission pipeline. We place this last, as this takes ~1 day to run and is fairly complex.
+- **Setup**: How to setup Starburst in your Python environment or get set up with our provided VM.
+- **Simulator Exps**: Run all our simulation experiments and replicate/plot our results.
+- **Real-World Exps**: Run our Starburst scheduler over a Kubernetes cluster (acting as on-prem) and run a job submission pipeline. We place this last, as each run takes 3-5 hours and is fairly complex.
+
+# Goals
+
+For simulation, the reviewer will be able to:
+- Run all simulation experiments for all figures and tables
+- Plot out the same figures provided in the Starburst paper
+
+ We provide run scripts in `~/starburst/simulator_scripts` and plotting notebooks in `~/starburst/skyburst/notebooks` to replicate our results.
+
+For real world evaluation, our goal is two fold:
+- Show that Starburst can save between 54-91\% costs (in fact we show that we save ~65\% for this artifact)
+- Show that our real system closely mimics simulation.
+
+ Run scripts are in `~/starburst/starburst/sweep` and evaluation scripts are in `~/starburst/starburst/plots`, which shows that Starburst saves > 50\% costs. To perform a 1-to-1 comparison with simulation, we evaluate real-system and simulator alignment in `~/starburst/starburst/notebooks/simulation_fidelity.ipynb`.
+
+## Caveats
+
+Our real-world experiments evaluated Starburst over a 4 node, 8 V100/node GKE cluster acting as the local cluster with real ML training jobs, which was prohibitively expensive to run. To reduce costs, our artifact evaluation approximates our original experiments with a 4 node, 24 CPU/node GKE cluster, where 1 GPU = 3 CPUs.
 
 # Setup
 
-We provide several options for the evaluator to install Starburst. We suggest users can run our simulation experiments either on their laptop/server or our provided VM. However, for real-world experiments, 
+We provide several options for the evaluator to install Starburst. For simulation, users can run our simulation experiments either on their laptop/server or our provided VM. However, for real-world experiments, we highly suggest the evaluators run our scripts in our provided SSH VM, which is connected to a provisioned Kubernetes cluster acting as the "local cluster".
 
 ## 1. Python Setup
 
@@ -71,7 +89,7 @@ To do so, install Gcloud on your machine and run the following command to pull t
 gsutil -m cp -r gs://starburst_bucket/logs ~/
 ```
 
-However, we also provide bash commands below to generate the logs for each figure below. This is also provided in the repo, in `skyburst/simulator_scripts`. Note that these experiments can take  5min-1 hour to complete on a 48 CPU machine.
+However, we also provide bash commands below to generate the logs for each figure below. This is also provided in the repo, in `skyburst/simulator_scripts`. Note that these experiments can take minutes to several hours to complete on a 48 CPU machine. We note that the Pareto curve experiments and the optimal MILP experiment takes the longest.
 
 ## Fig 7: End2End Simulator Results
 
@@ -208,12 +226,12 @@ Our real system is implemented in `~/starburst/starburst`. The general directory
 
 ## Running Real-World Experiments
 
-To run our real-world experiments, we [Chakra](https://github.com/michaelzhiluo/chakra/tree/fa4799bfc67ea983936b7c88864cbe35719eca0f) as a git submodule. If you cloned without installing the submodules, use the following command:
+To run our real-world experiments, we use [Chakra](https://github.com/michaelzhiluo/chakra/tree/fa4799bfc67ea983936b7c88864cbe35719eca0f) as a scheduling plugin for Kubernetes. If you cloned without installing the submodules, use the following command to pull Chakra into the Starburst repo:
 ```
 git submodule update --init --recursive
 ```
 
-There are a total of four runs - for No-Wait, Constant-Wait, Starburst, and Starburst without a time estimator (No-TE). Each run takes ~4-6 hours to complete. To setup, launch Chakra, our scheduler plugin for Kubernetes for best-bit binpacking:
+There are a total of four runs - for No-Wait, Constant-Wait, Starburst, and Starburst without a time estimator (No-TE). Each run takes ~3-5 hours to complete. To setup, launch Chakra, our scheduler plugin for Kubernetes for best-bit binpacking:
 ```
 # We highly recommend deleting and redeploying Chakra for each run. If jobs are pending in middle of a run, it is most likely Chakra has errored.
 # Note if jobs are pending state (run `kubectl get pods`) anytime in the middle of a run, we suggest restarting the run. 

@@ -35,9 +35,6 @@ def update_pod_nodes(log_path):
     cluster = data["onprem"]
     if 'pod_node' in cluster:
         for pod in cluster['pod_node']:
-            if cluster['pod_node'][pod]:
-                cluster['pod_node'][pod] = None
-
             if cluster['pod_node'][pod] is None:
                 node_name = fetch_node_name(pod)
                 if node_name:
