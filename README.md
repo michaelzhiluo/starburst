@@ -242,7 +242,7 @@ python process_logs.py --log_path ../sweep_logs/[RUN_ID]
 
 ## Plotting Real-World Experiments
 
-Similar to our simulator, we have precomputed sweep logs in our storage bucket `gs://starburst_bucket/sweep_logs`. To use our data, download the sweep logs into the Starburst repository:
+Similar to our simulator, we also have precomputed sweep logs in our storage bucket `gs://starburst_bucket/sweep_logs`. However, sweep logs can still be generated in the above section. If the user wants to try out our data, download the sweep logs into the Starburst repository:
 
 ```
 # Will download the our sweep logs to Starburst.
