@@ -1,5 +1,7 @@
 import logging
 import re
+import time
+import traceback
 from typing import Dict, List
 
 from jinja2 import Environment, select_autoescape, FileSystemLoader
@@ -12,6 +14,24 @@ from starburst.types.job import Job
 
 client.rest.logger.setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
+
+def retry_loop(fn, retry_attempts: int=50):
+    result = None
+    try:
+        result = fn()
+    except:
+        print(traceback.format_exc())
+        for _ in range(retry_attempts):
+            time.sleep(0.5)
+            try:
+                result = fn()
+                break
+            except:
+                print(traceback.format_exc())
+    return result
+
+
+
 
 
 def parse_resource_cpu(resource_str):
@@ -111,11 +131,7 @@ class KubernetesManager(Manager):
     def get_allocatable_resources(self) -> Dict[str, Dict[str, int]]:
         """ Get allocatable resources per node. """
         # Get the nodes and running pods
-        # limit = None
-        # continue_token = ""
-        # nodes, _, _ = self.core_v1.list_node_with_http_info(
-        #     limit=limit, _continue=continue_token)
-        nodes = self.core_v1.list_node()
+        nodes = retry_loop(self.core_v1.list_node)
         nodes = nodes.items
 
         available_resources = {}
@@ -132,7 +148,7 @@ class KubernetesManager(Manager):
             }
         # pods, _, _ = self.core_v1.list_pod_for_all_namespaces_with_http_info(
         #     limit=limit, _continue=continue_token)
-        pods = self.core_v1.list_namespaced_pod(namespace=self.namespace)
+        pods = retry_loop(lambda: self.core_v1.list_namespaced_pod(namespace=self.namespace))
         pods = pods.items
 
         for pod in pods:
@@ -212,8 +228,8 @@ class KubernetesManager(Manager):
 
     def _get_job_status(self, job_name: str) -> None:
         """ Get job status. """
-        job = self.batch_v1.read_namespaced_job(job_name,
-                                                namespace=self.namespace)
+        job = retry_loop(lambda: self.batch_v1.read_namespaced_job(job_name,
+                                                namespace=self.namespace))
         return job.status
 
     def convert_yaml(self, job: Job):
