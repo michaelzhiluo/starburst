@@ -138,7 +138,6 @@ class StarburstSchedulerv0:
         add_job = event.job
         add_job.set_arrival(time.time())
         add_job.set_runtime()
-        print(add_job.runtime)
         self.job_queue.append(add_job)
     
     async def process_queue_async(self):

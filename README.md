@@ -64,6 +64,8 @@ Finaly, move the provided Gurobi license file to `~/gurobi.lic`. One of our expe
 
 We also provide our private key and IP address of our VM for evaluators to run experiments in our VM, which already has everything setup! The VM contains the repositories for both simulator, real-world system (Kubernetes cluster), Gurobi, and the Philly/Helios traces.
 
+**Update: The IP address of our provided VM is `34.28.191.123`.**
+
 For best expereince, we recommend linking VSCode remote explorer with the SSH'ed VM by modifying the SSH config file `~/.ssh/config`:
 
 ```
@@ -215,7 +217,7 @@ Our real system is implemented in `~/starburst/starburst`. The general directory
 - `starburst/plots` - Our plotting code for sweep experiments, `plot_real.ipynb`.
 - `starburst/sweep` - Runs job submission over Starburst scheduler for long periods of times. Keeps track of running statistics, including job runtime, start time, and wait time.
 - `starburst/sweep_examples` - Example configs to run jobs over the Starburst scheduler with different scheduling policies.
-\
+
 **We suggest running real-world experiments in our provided SSH VM, which has access to the 4 node, 24 CPU GKE cluster as our local cluster.**
 
 ## Assumptions
@@ -224,9 +226,9 @@ Our real system is implemented in `~/starburst/starburst`. The general directory
 - Insteading of provisioning cloud resources with Skypilot, cloud-running jobs are sent to a log file instead to further reduce costs and to avoid hitting cloud quota limits. You can see them in `~/starburst/starburst/sweep_logs/[RUN_ID]/events/0.log`.
 - We run sleep jobs as opposed to training jobs, as there are no GPUs to run training. The sleep jobs are sampled from real-world training jobs, with the sleeping duration equivalent to the predicted runtime of training jobs.
 
-## Setup Kubernete Cluster
+## Setup Kubernetes Cluster
 
-We provide two options for users to setup the local Kubernetes cluster. The first option is directly SSH'ing to our provided VM and running the experiments. The second option is for the user to create a GKE cluster on their own, and the steps to do is provided in the Miscellaneous section at the bottom of this README file.
+We provide two options for users to setup the local Kubernetes cluster. The first option is directly SSH'ing to our provided VM, which has the Kubernetes cluster setup, and running the experiments. The second option is for the user to create a GKE cluster on their own, and the steps to do so is provided in the Miscellaneous section at the bottom of this README file.
 
 ## Running Real-World Experiments
 
@@ -254,7 +256,7 @@ We note that the runs **must be ran sequentially**, as there is only one cluster
 ./real_scripts/no-wait.sh
 ```
 
-**While the run is executing, progress of jobs submitted thus far can be visualized with `kubectl get pods`. If any job is in pending state on the Kubernetes cluster, that means Chakra has errored. Please restart the run by rerunning the bash command.** 
+**While the run is executing, progress of jobs submitted thus far can be visualized with `kubectl get pods`. If any job/pods are in `PENDING` state on the Kubernetes cluster, that means Chakra has errored. Please restart the run by rerunning the bash command.** 
 
 Finally, after each run, the runs logs needs to be post-processed. **Each run will log its outputs to `~/starburst/starburst/sweep_logs/[RUN_ID]`, where `RUN_ID` is a timestamp. We strongly empahsize to NOT LAUNCH the next run before processing logs below. Otherwise, the script will not be able to fetch information from the jobs on the K8 cluster.** To launch our post-processing script, run:
 ```
