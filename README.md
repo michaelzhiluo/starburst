@@ -224,6 +224,10 @@ Our real system is implemented in `~/starburst/starburst`. The general directory
 - Insteading of provisioning cloud resources with Skypilot, cloud-running jobs are sent to a log file instead to further reduce costs and to avoid hitting cloud quota limits. You can see them in `~/starburst/starburst/sweep_logs/[RUN_ID]/events/0.log`.
 - We run sleep jobs as opposed to training jobs, as there are no GPUs to run training. The sleep jobs are sampled from real-world training jobs, with the sleeping duration equivalent to the predicted runtime of training jobs.
 
+## Setup Kubernete Cluster
+
+We provide two options for users to setup the local Kubernetes cluster. The first option is directly SSH'ing to our provided VM and running the experiments. The second option is for the user to create a GKE cluster on their own, and the steps to do is provided in the Miscellaneous section at the bottom of this README file.
+
 ## Running Real-World Experiments
 
 To run our real-world experiments, we use [Chakra](https://github.com/michaelzhiluo/chakra/tree/fa4799bfc67ea983936b7c88864cbe35719eca0f) as a scheduling plugin for Kubernetes. If you cloned without installing the submodules, use the following command to pull Chakra into the Starburst repo:
@@ -231,36 +235,28 @@ To run our real-world experiments, we use [Chakra](https://github.com/michaelzhi
 git submodule update --init --recursive
 ```
 
-Before launching runs, the reviewer should make sure that the image `gcr.io/sky-burst/skyburst:latest` is cached on all nodes (pre-pulled) of the Kubernetes cluster. This ensures that there is no `ContainerCreate` state, which introduce container download delays and is not captured in our simulator. Our provided VM already has the image cached on all nodes, but we note this if the evaluator observes jobs/pods that are pulling images for too long.
+Before launching runs, the reviewer should make sure that the image `gcr.io/sky-burst/skyburst:latest` is cached on all nodes (pre-pulled) of the Kubernetes cluster. This ensures that there is no `ContainerCreating` state, which introduce container download delays and is not modeled in our simulator. Run:
 
-There are a total of four runs - for No-Wait, Constant-Wait, Starburst, and Starburst without a time estimator (No-TE). Each run takes ~3-5 hours to complete. To setup, launch Chakra, our scheduler plugin for Kubernetes for best-bit binpacking:
 ```
-# We highly recommend deleting and redeploying Chakra for each run. If jobs are pending in middle of a run, it is most likely Chakra has errored.
-# Note if jobs are pending state (run `kubectl get pods`) anytime in the middle of a run, we suggest restarting the run. 
-cd ~/starburst/chakra
-# Delete Chakra deployment from prior run.
-kubectl delete deployment chakra-scheduler
-# Deploy Chakra admin roles. (only needs to be done once)
-kubectl apply -f chakra_admin.yaml
-# Deploy Chakra.
-kubectl apply -f chakra.yaml
+# Ensures all images are already pulled onto each Kubernetes node. You may need to run this multiple times!
+./real_scripts/cache-images.sh
 ```
+
+There are a total of four runs - for No-Wait, Constant-Wait, Starburst, and Starburst without a time estimator (No-TE). Each run takes ~3-5 hours to complete. Our scripts re-deploys Chakra, the scheduler plugin for  Kubernetes, launches Starburst's higher level scheduler, and the job submission services.
 
 We note that the runs **must be ran sequentially**, as there is only one cluster. To launch our runs:
 ```
-cd ~/starburst/starburst/sweep
 # Ideally run this as a background process (such as in Tmux or Screen).
-# No-Wait - ../sweep_examples/artifact_eval/no-wait.yaml
-# Constant-Wait - ../sweep_examples/artifact_eval/constant-wait.yaml
-# Starburst - ../sweep_examples/artifact_eval/starburst.yaml
-# Starburst (No-TE) - ../sweep_examples/artifact_eval/starburst-note.yaml
-python submit_sweep.py --config ../sweep_examples/artifact_eval/no-wait.yaml
+# No-Wait - ./real_scripts/no-wait.sh
+# Constant-Wait - ./real_scripts/constant-wait.sh
+# Starburst - ./real_scripts/starburst.sh
+# Starburst (No-TE) - ./real_scripts/starburst-note.sh
+./real_scripts/no-wait.sh
 ```
 
-While the run is executing, progress of jobs submitted thus far can be visualized with `kubectl get pods`.
-Furthermore, each run will log its outputs to `~/starburst/starburst/sweep_logs/[RUN_ID]`.
+**While the run is executing, progress of jobs submitted thus far can be visualized with `kubectl get pods`. If any job is in pending state on the Kubernetes cluster, that means Chakra has errored. Please restart the run by rerunning the bash command.** 
 
-Finally, we require running post processing on the logs for each. To launch our post-processing script, run:
+Finally, after each run, the runs logs needs to be post-processed. **Each run will log its outputs to `~/starburst/starburst/sweep_logs/[RUN_ID]`, where `RUN_ID` is a timestamp. We strongly empahsize to NOT LAUNCH the next run before processing logs below. Otherwise, the script will not be able to fetch information from the jobs on the K8 cluster.** To launch our post-processing script, run:
 ```
 cd ~/starburst/starburst/sweep
 python process_logs.py --log_path ../sweep_logs/[RUN_ID]
@@ -295,9 +291,47 @@ Most notably, in this example, Starburst reduces costs by around **100% * (1 - 1
 
 ## Miscellaneous
 
+### Provisioning a Kubernetes cluster.
+
+While we provide a GKE cluster in our provided VM, we also provide steps for evaluator to independently provision their own GKE cluster for evaluation.
+
+1) Browse Google Cloud console and enable Google Kubernetes Engine (GKE) service. 
+
+2) Click create to generate a new GKE cluster and choose standard (not Autopilot) GKE cluster.
+
+3) Click the default-pool tab under 'Node Pools' and change number of nodes to 4.
+
+<img src="images/step1.png" width=90% height=90%>
+
+4) Go to nodes under default-pool. Click N2 for CPUs and set the custom number of CPUs to be 26 vCPUs. As Kubelet occupies some resources on each node, our actual GKE cluster size is ~25 vCPUs, leaving 1 vCPU available when all CPUs (3x8) are scheduled by Starburst.
+
+<img src="images/step2.png" width=90% height=90%>
+
+5) Create the new GKE cluster and fetch the Kube config from Google Cloud:
+
+```
+sudo apt-get install google-cloud-sdk-gke-gcloud-auth-plugin
+gcloud container clusters get-credentials [CLUSTER_NAME]
+```
+
+6) This will generate a Kubernetes configuraton in `~/.kube/config`. Fetch the name of the cluster in the `~/.kube/config`. For us, the name followed this format: `gke_[PROJECT_NAME]_[ZONE]_[CLUSTER_NAME]`. Rename the cluster to the name `local` with the following command:
+
+```
+kubectl config rename-context [CLUSTER_NAME] local
+```
+
+7) If all steps are correct, `kubectl get pods --context local` should run without error.
+
+8) Finally,  to ensure fidelity with our simulator, our experiments assume the container image is cached on each node of the cluster. To make sure all images are on the machine, run the following bash script in `starburst/real_scripts`:
+```
+./real_scripts/cache-images.sh
+```
+This will submit jobs to all nodes in the cluster and initiate the container pulling process.
+
+
 ### Starburst System Config
 
-We provide an example sweep config below to help evaluators better understand our system.
+We provide an example sweep config below to help evaluators better understand our system. These configs are in `starburst/sweep_examples`.
 ```
 # Sweep Parameters
 workload_type: artifact_eval # Artifact Evaluation workload consists of sleep jobs that are sampled from real-world training jobs (Sec 6.2).
@@ -335,28 +369,3 @@ clusters:
     cluster_type: log # Can also be skypilot or another K8 cluster.
     cluster_name: cloud
 ```
-
-
-### Provisioning a Kubernetes cluster.
-
-While we provide a GKE cluster, we also provide optional steps to create your own GKE cluster to run our evaluation. Run:
-```
-gcloud beta container --project [PROJECT_ID] clusters create [CLUSTER_NAME] \
-  --machine-type "n2-custom-26-32768" \
-  --image-type "COS_CONTAINERD" \
-  --disk-type "pd-balanced" \
-  --disk-size "100" \
-  --metadata disable-legacy-endpoints=true \
-  --num-nodes "4" \
-  --enable-autoupgrade \
-  --enable-autorepair \
-  --node-locations [ZONE]
-```
-
-Once the GKE cluster is provisoined, run the following commands to fetch the Kubenetes config and rename the cluster:
-```
-gcloud container clusters get-credentials [CLUSTER_NAME]
- kubectl config rename-context [CLUSTER_NAME] local
-```
-
-Finally, to ensure fidelity with our simulator, our experiments assume the container image is cached on each node of the cluster. To make sure all images are on the machine, simply run a sweep for any example in `sweep_examples/artifact_eval` and kill it in the middle of executing. This ensure that all nodes have at least one job scheduled to it, which initiates the ContainerPulling process.
