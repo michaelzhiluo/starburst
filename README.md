@@ -244,7 +244,7 @@ Before launching runs, the reviewer should make sure that the image `gcr.io/sky-
 ./real_scripts/cache-images.sh
 ```
 
-There are a total of four runs - for No-Wait, Constant-Wait, Starburst, and Starburst without a time estimator (No-TE). Each run takes ~3-5 hours to complete. Our scripts re-deploys Chakra, the scheduler plugin for  Kubernetes, launches Starburst's higher level scheduler, and the job submission services.
+There are a total of four runs - for No-Wait, Constant-Wait, Starburst, and Starburst without a time estimator (No-TE). Each run will submit jobs over a 3 hour time window, taking a total of ~3-5 hours to complete and wait for all jobs to finish. Our scripts re-deploys Chakra, the scheduler plugin for  Kubernetes, launches Starburst's higher level scheduler, and the job submission services.
 
 We note that the runs **must be ran sequentially**, as there is only one cluster. To launch our runs:
 ```
