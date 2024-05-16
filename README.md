@@ -293,7 +293,7 @@ For Starburst without a time estimator, both our real-life system and simulator 
 
 <img src="images/starburst-note-fidelity.png" width=90% height=90%>
 
-Most notably, in this example, Starburst reduces costs by around **100% * (1 - 15.94/48.72) = 67.28%%**, which validates our paper's claims.
+Most notably, in this example, Starburst reduces costs by around **100% * (1 - 15.94/48.72) = 67.28%**, which validates our paper's claims.
 
 ## Miscellaneous
 
