@@ -19,10 +19,10 @@ For simulation, the reviewer will be able to:
  We provide run scripts in `~/starburst/simulator_scripts` and plotting notebooks in `~/starburst/skyburst/notebooks` to replicate our results.
 
 For real world evaluation, our goal is two fold:
-- Show that Starburst can save between 54-91\% costs (in fact we show that we save ~65\% for this artifact)
+- Show that Starburst can save between 54-91\% costs (in fact we show that we save ~67\% for this artifact)
 - Show that our real system closely mimics simulation.
 
- Run scripts are in `~/starburst/starburst/sweep` and evaluation scripts are in `~/starburst/starburst/plots`, which shows that Starburst saves > 50\% costs. To perform a 1-to-1 comparison with simulation, we evaluate real-system and simulator alignment in `~/starburst/starburst/notebooks/simulation_fidelity.ipynb`.
+ Run scripts are in `~/starburst/starburst/sweep` and evaluation scripts are in `~/starburst/starburst/plots`, which shows that Starburst saves > 60\% costs. To perform a 1-to-1 comparison with simulation, we evaluate real-system and simulator alignment in `~/starburst/starburst/notebooks/simulation_fidelity.ipynb`.
 
 ## Caveats
 
@@ -285,11 +285,15 @@ For No-Wait, both our real-life system and simulator achieve similar costs -  48
 
 <img src="images/no-wait-fidelity.png" width=90% height=90%>
 
-For Starburst, both our real-life system and simulator also achieve similar costs - 18.33 vs 18.41.
+For Starburst, both our real-life system and simulator also achieve similar costs - 15.94 versus 15.47.
+
+<img src="images/starburst.png" width=90% height=90%>
+
+For Starburst without a time estimator, both our real-life system and simulator also achieve similar costs - 18.33 vs 18.41.
 
 <img src="images/starburst-note-fidelity.png" width=90% height=90%>
 
-Most notably, in this example, Starburst reduces costs by around **100% * (1 - 18.33/48.72) = 62.37%**, which validates our paper's claims.
+Most notably, in this example, Starburst reduces costs by around **100% * (1 - 15.94/48.72) = 67.28%%**, which validates our paper's claims.
 
 ## Miscellaneous
 
