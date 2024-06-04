@@ -5,7 +5,7 @@ python run_simulator_sweep.py \
 --dataset philly_gen \
 --arrival 8 12 16 20 24 25 26 27 28 \
 32 34 36 40 44 48 52 56 60 64 68 72 76 80 84 88 92 \
---cv_factor 1 4 8 16 \
+--cv_factor 1 2 4 8 \
 --total_jobs 300000 \
 --loop 1 \
 --max_queue_length 30 \
